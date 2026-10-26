@@ -1,0 +1,32 @@
+@model List<Course>
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1 class="page-title">My courses</h1>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No courses are assigned to you yet.</p>
+}
+else
+{
+    <div class="panel">
+        <table class="table mb-0">
+            <thead><tr><th>Code</th><th>Subject</th><th>Dropout limit</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@c.Code</td>
+                        <td>@c.Subject</td>
+                        <td>@c.MaxPoints pts</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="Attendance" asp-action="Index" asp-route-courseId="@c.Id">Attendance</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,31 +1,171 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+/* Colors and sizes live here. Change them once and the whole site follows. */
+:root {
+    --bg: #f5f4ee;
+    --sidebar: #eceadf;
+    --panel: #ffffff;
+    --border: #e2dfd3;
+    --text: #2b2a27;
+    --muted: #75716a;
+    --accent: #c4663f;
+    --radius: 14px;
 }
 
 body {
-  margin-bottom: 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+/* ---------- App shell: sidebar + content ---------- */
+.app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+.sidebar {
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem 1rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    padding-left: .5rem;
+}
+
+.nav-list { display: flex; flex-direction: column; gap: .25rem; }
+
+.nav-item {
+    color: var(--text);
+    text-decoration: none;
+    padding: .55rem .75rem;
+    border-radius: 10px;
+}
+.nav-item:hover { background: rgba(0, 0, 0, .06); }
+.nav-item.active { background: #fff; font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+
+.sidebar-footer { margin-top: auto; padding: .5rem; }
+
+.content { padding: 2rem; min-width: 0; }
+
+.page-title { font-size: 1.6rem; margin-bottom: 1.25rem; }
+
+/* ---------- Panels (cards) ---------- */
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.panel-title { font-size: 1rem; font-weight: 600; margin-bottom: .75rem; }
+
+.course { margin-bottom: 1rem; }
+.course .progress { height: 8px; margin: .35rem 0; }
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .55rem 0;
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-row:hover { color: var(--accent); }
+
+.count { min-width: 2rem; text-align: center; border-radius: 999px; padding: .1rem .6rem; font-weight: 600; }
+.count.ok { background: #e3f1e5; color: #2d6a3a; }
+.count.bad { background: #fbe4df; color: #a8321c; }
+
+/* ---------- Dashboard layout: Tala on the left, panels on the right ---------- */
+.dash {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* ---------- Tala ---------- */
+.tala {
+    display: flex;
+    flex-direction: column;
+    min-height: 75vh;
+}
+
+.hello {
+    margin: auto;
+    text-align: center;
+}
+.hello h1 { font-family: Georgia, "Times New Roman", serif; font-size: 2.4rem; }
+.hello p { color: var(--muted); font-size: 1.1rem; }
+
+.chat { display: flex; flex-direction: column; gap: .75rem; padding-bottom: 1rem; }
+.chat:empty { display: none; }
+
+.msg {
+    max-width: 85%;
+    padding: .7rem 1rem;
+    border-radius: var(--radius);
+    white-space: pre-wrap; /* keeps the line breaks in Tala's answers */
+}
+.msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+.msg.tala { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); }
+.msg small { display: block; margin-top: .5rem; color: var(--muted); }
+
+.ask {
+    display: flex;
+    gap: .5rem;
+    margin-top: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .4rem .4rem .4rem 1.1rem;
+}
+.ask input { flex: 1; border: none; outline: none; background: transparent; }
+.ask button {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: .45rem 1.1rem;
+}
+
+/* ---------- Login / register (logged-out pages) ---------- */
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 1rem; }
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+}
+.auth-brand { font-size: 1.4rem; font-weight: 600; margin-bottom: 1rem; }
+/* No external logins (Google etc.) are set up, so hide that empty column. */
+.auth-card .col-md-6 { display: none; }
+.auth-card .col-md-4 { width: 100%; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 992px) {
+    .dash { grid-template-columns: 1fr; }
+    .tala { min-height: 55vh; }
+}
+@media (max-width: 768px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    .nav-list { flex-direction: row; }
+    .sidebar-footer { margin-top: 1rem; }
+    .content { padding: 1rem; }
 }

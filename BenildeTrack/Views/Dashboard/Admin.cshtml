@@ -1,0 +1,33 @@
+@model List<StudentRow>
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1 class="page-title">Students</h1>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No student accounts yet.</p>
+}
+else
+{
+    <div class="panel">
+        <table class="table mb-0">
+            <thead><tr><th>Name</th><th>Email</th><th>Open violations</th><th>Missing objectives and clearances</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td>@s.Student.DisplayName</td>
+                        <td>@s.Student.Email</td>
+                        <td>@s.OpenViolations</td>
+                        <td>@s.MissingRequirements</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="Students" asp-action="Details" asp-route-id="@s.Student.Id">Manage</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

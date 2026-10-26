@@ -1,25 +1,26 @@
-@model HandbookAskViewModel
-@{ ViewData["Title"] = "Ask the Handbook"; }
-<h1>Ask the Handbook</h1>
-<p>Ask a question about the Benilde Student Handbook, for example whether something could count as a violation,
-   or what happens after one. Nothing you type is saved by this app. Please don't include real names or personal details.</p>
+@model List<HandbookSection>
+@{
+    ViewData["Title"] = "Handbook";
+    string? query = ViewBag.Query;
+}
 
-<form asp-action="Index" method="post">
-    <div asp-validation-summary="All" style="color:red"></div>
-    <p><label asp-for="Question"></label><br />
-       <textarea asp-for="Question" rows="4" cols="60"></textarea>
-       <span asp-validation-for="Question" style="color:red"></span></p>
-    <button type="submit">Ask</button>
+<h1 class="page-title">Handbook</h1>
+<p class="text-muted">Search for a rule. This finds matching sections, it is not an official ruling.</p>
+
+<form method="get" asp-action="Index" class="d-flex gap-2 mb-4">
+    <input name="q" value="@query" class="form-control" placeholder="Try: shouting in class" />
+    <button class="btn btn-primary">Search</button>
 </form>
 
-@if (!string.IsNullOrEmpty(Model.Error))
+@if (!string.IsNullOrWhiteSpace(query) && !Model.Any())
 {
-    <p style="color:red">@Model.Error</p>
+    <p>No matching sections. Try different words.</p>
 }
-@if (!string.IsNullOrEmpty(Model.Answer))
+
+@foreach (var s in Model)
 {
-    <h3>Answer</h3>
-    <div style="border:1px solid #999;padding:8px;max-width:640px;white-space:pre-wrap">@Model.Answer</div>
-    <p><i>This is general information from an AI, not an official ruling, and it can make mistakes.
-       For an official answer, ask the Center for Restorative Discipline (CRD).</i></p>
+    <div class="panel">
+        <h2 class="panel-title">@s.Number - @s.Title</h2>
+        <p class="mb-0">@s.Text</p>
+    </div>
 }

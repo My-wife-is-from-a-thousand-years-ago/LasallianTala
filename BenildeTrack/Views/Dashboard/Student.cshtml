@@ -1,0 +1,78 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+
+    // "ok" (green) when there is nothing to do, "bad" (red) when there is.
+    string Tone(int count) => count > 0 ? "bad" : "ok";
+}
+
+<div class="dash">
+
+    @* ---------- Main area: Tala ---------- *@
+    <section class="tala">
+        <div id="hello" class="hello">
+            <h1>Meet Tala!</h1>
+            <p>Ask me anything school-related!</p>
+        </div>
+
+        <div id="chat" class="chat"></div>
+
+        <form id="ask-form" class="ask" data-url="@Url.Action("Ask", "Tala")">
+            @Html.AntiForgeryToken()
+            <input id="question" type="text" maxlength="300" autocomplete="off"
+                   placeholder="Try: how many dropout points do I have?" />
+            <button type="submit">Send</button>
+        </form>
+    </section>
+
+    @* ---------- Side panels ---------- *@
+    <aside class="side">
+        <div class="panel">
+            <h2 class="panel-title">Course Panel</h2>
+
+            @if (!Model.Courses.Any())
+            {
+                <p class="text-muted mb-0">You are not enrolled in any course yet.</p>
+            }
+
+            @foreach (var c in Model.Courses)
+            {
+                <div class="course">
+                    <div class="d-flex justify-content-between">
+                        <strong>@c.Course.Subject</strong>
+                        <small class="text-muted">@c.Course.Code</small>
+                    </div>
+                    <div class="progress" role="progressbar" aria-valuenow="@c.Percent" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar bg-@c.Color" style="width: @(c.Percent)%"></div>
+                    </div>
+                    <small class="text-muted">Dropout @c.Points / @c.Course.MaxPoints pts</small>
+                </div>
+            }
+
+            <small class="text-muted d-block mt-2">
+                Absent = @AttendanceRecord.AbsentPoints pts, late = @AttendanceRecord.LatePoints pt
+            </small>
+        </div>
+
+        <div class="panel">
+            <h2 class="panel-title">Campus Panel</h2>
+
+            <a class="stat-row" asp-controller="Campus" asp-action="Index">
+                <span>Current violations</span>
+                <span class="count @Tone(Model.OpenViolations)">@Model.OpenViolations</span>
+            </a>
+            <a class="stat-row" asp-controller="Campus" asp-action="Index">
+                <span>Missing clearances</span>
+                <span class="count @Tone(Model.MissingClearances)">@Model.MissingClearances</span>
+            </a>
+            <a class="stat-row" asp-controller="Campus" asp-action="Index">
+                <span>Missing objectives</span>
+                <span class="count @Tone(Model.MissingObjectives)">@Model.MissingObjectives</span>
+            </a>
+        </div>
+    </aside>
+</div>
+
+@section Scripts {
+    <script src="~/js/tala.js" asp-append-version="true"></script>
+}

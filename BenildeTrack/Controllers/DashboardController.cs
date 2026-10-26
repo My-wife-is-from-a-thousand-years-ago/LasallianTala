@@ -1,5 +1,7 @@
 using BenildeTrack.Data;
 using BenildeTrack.Models;
+using BenildeTrack.Services;
+using BenildeTrack.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -7,62 +9,90 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BenildeTrack.Controllers;
 
-// Read-only summary of data from the other modules, depending on the logged-in role.
+// One URL, three dashboards: the logged-in role decides which view is shown.
 [Authorize]
 public class DashboardController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly StandingService _standing;
 
-    public DashboardController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public DashboardController(
+        ApplicationDbContext db,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        StandingService standing)
     {
         _db = db;
         _userManager = userManager;
+        _signInManager = signInManager;
+        _standing = standing;
     }
 
     public async Task<IActionResult> Index()
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null) return Challenge();
+        // Someone who just registered has no role yet. Make them a Student (the safest role),
+        // then refresh their login cookie so the new role takes effect.
+        if (!User.IsInRole(AppRoles.Student) && !User.IsInRole(AppRoles.Teacher) && !User.IsInRole(AppRoles.Admin))
+        {
+            var newUser = await _userManager.GetUserAsync(User);
+            if (newUser == null) return Challenge();
 
-        var myId = user.Id;
-        var vm = new DashboardViewModel { FullName = user.FullName };
+            var result = await _userManager.AddToRoleAsync(newUser, AppRoles.Student);
+            if (!result.Succeeded) return StatusCode(500, "Could not assign a role to this account.");
 
-        if (User.IsInRole(AppRoles.Administrator))
-        {
-            vm.Role = AppRoles.Administrator;
-            vm.StudentCount = (await _userManager.GetUsersInRoleAsync(AppRoles.Student)).Count;
-            vm.ProfessorCount = (await _userManager.GetUsersInRoleAsync(AppRoles.Professor)).Count;
-            vm.ClassCount = await _db.Classes.CountAsync();
-            vm.AllUnresolvedViolations = await _db.Violations.CountAsync(v => v.Status == "Unresolved");
-            vm.RecentViolations = await _db.Violations.Include(v => v.Student)
-                .OrderByDescending(v => v.ViolationDate).Take(5).ToListAsync();
-        }
-        else if (User.IsInRole(AppRoles.Professor))
-        {
-            vm.Role = AppRoles.Professor;
-            vm.ClassesTaught = await _db.Classes.CountAsync(c => c.ProfessorId == myId);
-            vm.AbsencesRecorded = await _db.Absences.CountAsync(a => a.Class!.ProfessorId == myId);
-            vm.DocumentsToReview = await _db.ExcuseDocuments.CountAsync(d => d.ProfessorId == myId && d.Status == "Pending");
-            vm.RecentDocuments = await _db.ExcuseDocuments.Include(d => d.Student)
-                .Where(d => d.ProfessorId == myId && d.Status == "Pending")
-                .OrderByDescending(d => d.DateSubmitted).Take(5).ToListAsync();
-        }
-        else if (User.IsInRole(AppRoles.Student))
-        {
-            vm.Role = AppRoles.Student;
-            vm.TotalViolations = await _db.Violations.CountAsync(v => v.StudentId == myId);
-            vm.UnresolvedViolations = await _db.Violations.CountAsync(v => v.StudentId == myId && v.Status == "Unresolved");
-            vm.TotalAbsences = await _db.Absences.CountAsync(a => a.StudentId == myId);
-            vm.PendingDocuments = await _db.ExcuseDocuments.CountAsync(d => d.StudentId == myId && d.Status == "Pending");
-            vm.RecentViolations = await _db.Violations
-                .Where(v => v.StudentId == myId).OrderByDescending(v => v.ViolationDate).Take(5).ToListAsync();
-            vm.RecentAbsences = await _db.Absences.Include(a => a.Class)
-                .Where(a => a.StudentId == myId).OrderByDescending(a => a.AbsenceDate).Take(5).ToListAsync();
-            vm.RecentDocuments = await _db.ExcuseDocuments.Include(d => d.Professor)
-                .Where(d => d.StudentId == myId).OrderByDescending(d => d.DateSubmitted).Take(5).ToListAsync();
+            await _signInManager.RefreshSignInAsync(newUser);
+            return RedirectToAction(nameof(Index));
         }
 
-        return View(vm);
+        var userId = _userManager.GetUserId(User)!;
+
+        if (User.IsInRole(AppRoles.Admin))
+            return View("Admin", await BuildStudentRowsAsync());
+
+        if (User.IsInRole(AppRoles.Teacher))
+        {
+            var myCourses = await _db.Courses.Where(c => c.TeacherId == userId).OrderBy(c => c.Code).ToListAsync();
+            return View("Teacher", myCourses);
+        }
+
+        var model = new DashboardViewModel
+        {
+            Courses = await _standing.GetCoursePointsAsync(userId),
+            OpenViolations = (await _standing.GetOpenViolationsAsync(userId)).Count,
+            MissingClearances = (await _standing.GetMissingAsync(userId, RequirementKind.Clearance)).Count,
+            MissingObjectives = (await _standing.GetMissingAsync(userId, RequirementKind.Objective)).Count
+        };
+        return View("Student", model);
+    }
+
+    // The admin's student list, with counts of open violations and missing requirements.
+    private async Task<List<StudentRow>> BuildStudentRowsAsync()
+    {
+        var students = await _userManager.GetUsersInRoleAsync(AppRoles.Student);
+
+        var violationCounts = await _db.Violations
+            .Where(v => !v.IsResolved)
+            .GroupBy(v => v.StudentId)
+            .Select(g => new { StudentId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.StudentId, x => x.Count);
+
+        var doneCounts = await _db.CompletedRequirements
+            .GroupBy(c => c.StudentId)
+            .Select(g => new { StudentId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.StudentId, x => x.Count);
+
+        int totalRequirements = await _db.Requirements.CountAsync();
+
+        return students
+            .OrderBy(s => s.DisplayName)
+            .Select(s => new StudentRow
+            {
+                Student = s,
+                OpenViolations = violationCounts.GetValueOrDefault(s.Id),
+                MissingRequirements = totalRequirements - doneCounts.GetValueOrDefault(s.Id)
+            })
+            .ToList();
     }
 }

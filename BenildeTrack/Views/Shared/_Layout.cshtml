@@ -1,58 +1,75 @@
+@{
+    // Which sidebar item is highlighted, based on the current controller.
+    var current = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    string Active(params string[] controllers) => controllers.Contains(current) ? "active" : "";
+
+    var navDashboard = Active("Dashboard", "Campus", "Attendance", "Students");
+    var navHandbook = Active("Handbook");
+    var navProfile = Active("Profile");
+
+    bool signedIn = User.Identity?.IsAuthenticated == true;
+    string role = User.IsInRole(AppRoles.Admin) ? "Admin" : User.IsInRole(AppRoles.Teacher) ? "Teacher" : "Student";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BenildeTrack</title>
+    <title>@ViewData["Title"] - @AppInfo.Name</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <h2>BenildeTrack</h2>
-        <nav>
-            <a asp-controller="Home" asp-action="Index">Home</a>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <text> | </text><a asp-controller="Dashboard" asp-action="Index">Dashboard</a>
-            }
-            @if (User.IsInRole(AppRoles.Administrator))
-            {
-                <text> | </text><a asp-controller="Users" asp-action="Index">User Accounts</a>
-                <text> | </text><a asp-controller="Users" asp-action="Index" asp-route-role="Student">Students</a>
-                <text> | </text><a asp-controller="Classes" asp-action="Index">Classes</a>
-            }
-            @if (User.IsInRole(AppRoles.Administrator) || User.IsInRole(AppRoles.Student))
-            {
-                <text> | </text><a asp-controller="Violations" asp-action="Index">Violations</a>
-            }
-            @if (User.IsInRole(AppRoles.Professor) || User.IsInRole(AppRoles.Student))
-            {
-                <text> | </text><a asp-controller="Absences" asp-action="Index">Absences</a>
-                <text> | </text><a asp-controller="ExcuseDocuments" asp-action="Index">Excuse Documents</a>
-            }
-            @if (User.IsInRole(AppRoles.Student))
-            {
-                <text> | </text><a asp-controller="Handbook" asp-action="Index">Ask the Handbook</a>
-            }
-            <text> | </text>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
-                    <button type="submit">Logout (@User.Identity.Name)</button>
+@if (signedIn)
+{
+    @* Logged in: sidebar on the left, page content on the right. *@
+    <div class="app">
+        <aside class="sidebar">
+            <a class="brand" asp-controller="Dashboard" asp-action="Index">@AppInfo.Name</a>
+
+            <nav class="nav-list">
+                <a class="nav-item @navDashboard" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                <a class="nav-item @navHandbook" asp-controller="Handbook" asp-action="Index">Handbook</a>
+                <a class="nav-item @navProfile" asp-controller="Profile" asp-action="Index">Profile</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="small text-truncate">@User.Identity?.Name</div>
+                <div class="small text-muted mb-2">@role</div>
+                <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Log out</button>
                 </form>
-            }
-            else
+            </div>
+        </aside>
+
+        <main class="content">
+            @* One place for the messages controllers leave in TempData. *@
+            @if (TempData["Message"] != null)
             {
-                <a asp-controller="Account" asp-action="Login">Login</a>
+                <div class="alert alert-success">@TempData["Message"]</div>
             }
-        </nav>
-        <hr />
-    </header>
-    <main>
-        @if (TempData["Error"] != null)
-        {
-            <p style="color:red">@TempData["Error"]</p>
-        }
-        @RenderBody()
-    </main>
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger">@TempData["Error"]</div>
+            }
+
+            @RenderBody()
+        </main>
+    </div>
+}
+else
+{
+    @* Logged out: login and register pages show in a small centered card. *@
+    <div class="auth-wrap">
+        <div class="auth-card">
+            <div class="auth-brand">@AppInfo.Name</div>
+            @RenderBody()
+        </div>
+    </div>
+}
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

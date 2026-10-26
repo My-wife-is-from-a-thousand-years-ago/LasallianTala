@@ -1,8 +1,0 @@
-@model Violation
-@{ ViewData["Title"] = "Edit Violation"; }
-<h1>Edit Violation</h1>
-<form asp-action="Edit" method="post">
-    <input type="hidden" asp-for="Id" />
-    <partial name="_Form" model="Model" />
-    <button type="submit">Save</button> <a asp-action="Index">Cancel</a>
-</form>

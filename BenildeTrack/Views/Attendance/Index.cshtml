@@ -1,0 +1,78 @@
+@model AttendanceViewModel
+@{
+    ViewData["Title"] = "Attendance";
+    var today = DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<h1 class="page-title">@Model.Course.Code - @Model.Course.Subject</h1>
+
+<div class="panel">
+    <h2 class="panel-title">Record absence or late</h2>
+    <form method="post" asp-action="Add" class="row g-2">
+        <input type="hidden" name="courseId" value="@Model.Course.Id" />
+        <div class="col-md-4">
+            <select name="studentId" class="form-select" asp-items="@(new SelectList(Model.Students, "Id", "DisplayName"))"></select>
+        </div>
+        <div class="col-md-3">
+            <input type="date" name="date" class="form-control" value="@today" />
+        </div>
+        <div class="col-md-3">
+            <select name="type" class="form-select">
+                <option value="Absent">Absent (@AttendanceRecord.AbsentPoints pts)</option>
+                <option value="Late">Late (@AttendanceRecord.LatePoints pt)</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100">Add</button>
+        </div>
+    </form>
+</div>
+
+<div class="panel">
+    <h2 class="panel-title">Class roster</h2>
+    <table class="table mb-0">
+        <thead><tr><th>Student</th><th>Absences</th><th>Lates</th><th>Dropout points</th></tr></thead>
+        <tbody>
+            @foreach (var r in Model.Roster)
+            {
+                <tr>
+                    <td>@r.Student.DisplayName</td>
+                    <td>@r.Absences</td>
+                    <td>@r.Lates</td>
+                    <td>@r.Points / @Model.Course.MaxPoints</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="panel">
+    <h2 class="panel-title">Recent records</h2>
+    @if (!Model.Recent.Any())
+    {
+        <p class="text-muted mb-0">Nothing recorded yet.</p>
+    }
+    else
+    {
+        <table class="table mb-0">
+            <thead><tr><th>Date</th><th>Student</th><th>Type</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.Recent)
+                {
+                    <tr>
+                        <td>@r.Date.ToString("MMM d, yyyy")</td>
+                        <td>@r.Student?.DisplayName</td>
+                        <td>@r.Type</td>
+                        <td class="text-end">
+                            <form method="post" asp-action="Remove">
+                                <input type="hidden" name="courseId" value="@Model.Course.Id" />
+                                <input type="hidden" name="recordId" value="@r.Id" />
+                                <button class="btn btn-sm btn-outline-danger">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
