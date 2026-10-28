@@ -1,0 +1,63 @@
+@model SubjectPickerViewModel
+@{
+    ViewData["Title"] = "My subjects";
+}
+
+<h1 class="h3 mb-4">My subjects</h1>
+
+@if (Model.Course == null)
+{
+    @* Step 1: choose the course (once). *@
+    <div class="card shadow-sm col-lg-6">
+        <div class="card-header bg-success text-white fw-semibold">Step 1: choose your course</div>
+        <div class="card-body">
+            @if (!Model.Courses.Any())
+            {
+                <p class="text-muted mb-0">No courses have been added yet. Ask an admin.</p>
+            }
+            else
+            {
+                <form method="post" asp-action="SetCourse">
+                    <select name="courseId" class="form-select mb-3" asp-items="@(new SelectList(Model.Courses, "Id", "Name"))"></select>
+                    <button class="btn btn-success">Continue</button>
+                </form>
+            }
+        </div>
+    </div>
+}
+else
+{
+    @* Step 2: tick the subjects you take. *@
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white fw-semibold">Step 2: tick your subjects in @Model.Course.Name</div>
+
+        @if (!Model.Subjects.Any())
+        {
+            <div class="card-body text-muted">This course has no subjects yet. Ask an admin to add them.</div>
+        }
+        else
+        {
+            <form method="post" asp-action="Save">
+                <table class="table table-striped align-middle mb-0">
+                    <thead><tr><th></th><th>Code</th><th>Subject</th><th>Professor</th><th>Dropout limit</th></tr></thead>
+                    <tbody>
+                        @foreach (var s in Model.Subjects)
+                        {
+                            <tr>
+                                <td><input class="form-check-input" type="checkbox" name="subjectIds" value="@s.Id" @(Model.EnrolledIds.Contains(s.Id) ? "checked" : "") /></td>
+                                <td>@s.Code</td>
+                                <td>@s.Name</td>
+                                <td>@s.Professor?.DisplayName</td>
+                                <td>@s.MaxPoints pts</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="card-body">
+                    <button class="btn btn-success">Save subjects</button>
+                    <a class="btn btn-link link-success" asp-controller="Dashboard" asp-action="Index">Cancel</a>
+                </div>
+            </form>
+        }
+    </div>
+}

@@ -1,0 +1,122 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+
+    // Red badge when there is something to do, green when there is not.
+    string Tone(int count) => count > 0 ? "bg-danger" : "bg-success";
+}
+
+<h1 class="h3 mb-4">Dashboard</h1>
+
+<div class="row g-4">
+
+    @* ---------- Course Panel ---------- *@
+    <div class="col-12 col-xl-7">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Course Panel</span>
+                <a class="btn btn-sm btn-light" asp-controller="Subjects" asp-action="Index">Manage subjects</a>
+            </div>
+            <div class="card-body">
+
+                @if (!Model.HasCourse)
+                {
+                    <p>Pick your course and subjects to start tracking your dropout points.</p>
+                    <a class="btn btn-success" asp-controller="Subjects" asp-action="Index">Choose my course</a>
+                }
+                else if (!Model.Subjects.Any())
+                {
+                    <p class="text-muted mb-0">@Model.CourseName: you haven't picked any subjects yet.</p>
+                }
+
+                @foreach (var s in Model.Subjects)
+                {
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between">
+                            <strong>@s.Subject.Name</strong>
+                            <span class="text-muted small">@s.Subject.Code</span>
+                        </div>
+
+                        <div class="progress my-1" role="progressbar" aria-valuenow="@s.Percent" aria-valuemin="0" aria-valuemax="100">
+                            @* Bootstrap sets the bar length with an inline width. This is the only inline style in the app. *@
+                            <div class="progress-bar bg-@s.Color" style="width: @(s.Percent)%"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Dropout @s.Points / @s.Subject.MaxPoints pts</small>
+                            <span>
+                                @if (s.PendingReview > 0)
+                                {
+                                    <span class="badge bg-secondary">@s.PendingReview in review</span>
+                                }
+                                @if (s.Excusable > 0)
+                                {
+                                    <a class="btn btn-sm btn-outline-success" asp-controller="Excuses" asp-action="Create" asp-route-subjectId="@s.Subject.Id">Submit excuse</a>
+                                }
+                            </span>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.Subjects.Any())
+                {
+                    <small class="text-muted">Absent = @AttendanceRecord.AbsentPoints pts, late = @AttendanceRecord.LatePoints pt. Accepted excuses are not counted.</small>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ---------- Campus Panel + excuses ---------- *@
+    <div class="col-12 col-xl-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white fw-semibold">Campus Panel</div>
+            <div class="list-group list-group-flush">
+                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" asp-controller="Campus" asp-action="Index">
+                    Current violations
+                    <span class="badge rounded-pill @Tone(Model.OpenViolations)">@Model.OpenViolations</span>
+                </a>
+                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" asp-controller="Campus" asp-action="Index">
+                    Missing clearances
+                    <span class="badge rounded-pill @Tone(Model.MissingClearances)">@Model.MissingClearances</span>
+                </a>
+                <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" asp-controller="Campus" asp-action="Index">
+                    Missing objectives
+                    <span class="badge rounded-pill @Tone(Model.MissingObjectives)">@Model.MissingObjectives</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white fw-semibold">My excuses</div>
+            @if (!Model.RecentExcuses.Any())
+            {
+                <div class="card-body text-muted">Nothing submitted yet.</div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var d in Model.RecentExcuses)
+                    {
+                        var badge = d.Status switch
+                        {
+                            ExcuseStatus.Accepted => "bg-success",
+                            ExcuseStatus.Rejected => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span>@d.Subject?.Code - @d.DateSubmitted.ToString("MMM d")</span>
+                                <span class="badge @badge">@d.Status</span>
+                            </div>
+                            <small class="text-muted">@d.Reason</small>
+                            @if (!string.IsNullOrEmpty(d.Remarks))
+                            {
+                                <div class="small">Professor: @d.Remarks</div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

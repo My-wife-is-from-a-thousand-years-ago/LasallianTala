@@ -1,0 +1,41 @@
+@model List<AccountRow>
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Accounts</h1>
+    <a class="btn btn-success" asp-controller="Accounts" asp-action="Create">Create account</a>
+</div>
+
+<div class="card shadow-sm">
+    <table class="table table-striped align-middle mb-0">
+        <thead>
+            <tr><th>Name</th><th>Email</th><th>Role</th><th>Course</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var a in Model)
+            {
+                <tr>
+                    <td>@a.User.DisplayName</td>
+                    <td>@a.User.Email</td>
+                    <td><span class="badge bg-success">@a.Role</span></td>
+                    <td>@a.User.Course?.Code</td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-1">
+                            @if (a.Role == AppRoles.Student)
+                            {
+                                <a class="btn btn-sm btn-outline-success" asp-controller="Students" asp-action="Details" asp-route-id="@a.User.Id">Records</a>
+                            }
+                            <a class="btn btn-sm btn-outline-secondary" asp-controller="Accounts" asp-action="Edit" asp-route-id="@a.User.Id">Edit</a>
+                            <form method="post" asp-controller="Accounts" asp-action="Delete" asp-route-id="@a.User.Id"
+                                  onsubmit="return confirm('Delete this account? Their records are deleted with it.');">
+                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

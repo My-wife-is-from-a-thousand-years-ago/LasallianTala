@@ -1,51 +1,26 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace BenildeTrack.Models;
 
+// One excuse that covers one or more attendance records in ONE subject.
+// SubjectId is what routes it to the right professor.
 public class ExcuseDocument
 {
-    public const string BenireType = "Benire Letter";
-
-    public static readonly string[] Types = { "Excuse Letter", BenireType, "Medical Paper" };
-    public static readonly string[] Statuses = { "Pending", "Accepted", "Rejected", "Acknowledged" };
-
     public int Id { get; set; }
 
-    [Required]
-    public string StudentId { get; set; } = string.Empty;
+    public string StudentId { get; set; } = "";
     public ApplicationUser? Student { get; set; }
 
-    // The professor this document is addressed to (the one who reviews or signs it).
-    [Required, Display(Name = "Professor")]
-    public string ProfessorId { get; set; } = string.Empty;
-    public ApplicationUser? Professor { get; set; }
+    public int SubjectId { get; set; }
+    public Subject? Subject { get; set; }
 
-    [Required, Display(Name = "Document Type")]
-    public string DocumentType { get; set; } = Types[0];
+    public string Reason { get; set; } = "";
 
-    [DataType(DataType.Date), Display(Name = "Benire Start Date")]
-    public DateTime? BenireStartDate { get; set; }
+    // Files live outside wwwroot under random names. A student may send a picture, a signature, or both.
+    public string? PictureFileName { get; set; }
+    public string? SignatureFileName { get; set; }
 
-    [DataType(DataType.Date), Display(Name = "Benire End Date")]
-    public DateTime? BenireEndDate { get; set; }
-
-    // Stored (generated) file name on the server.
-    [Required]
-    public string FilePath { get; set; } = string.Empty;
-
-    [Display(Name = "File Name")]
-    public string OriginalFileName { get; set; } = string.Empty;
-
-    [Display(Name = "Date Submitted")]
-    public DateTime DateSubmitted { get; set; } = DateTime.Now;
-
-    [Required]
-    public string Status { get; set; } = "Pending";
-
-    [StringLength(500)]
+    public DateTime DateSubmitted { get; set; }
+    public ExcuseStatus Status { get; set; } = ExcuseStatus.Pending;
     public string? Remarks { get; set; }
 
-    // Set when a professor acknowledges (signs) a Benire letter.
-    [Display(Name = "Acknowledged At")]
-    public DateTime? SignedAt { get; set; }
+    public List<AttendanceRecord> AttendanceRecords { get; set; } = new();
 }

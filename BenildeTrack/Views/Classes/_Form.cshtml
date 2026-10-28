@@ -1,8 +1,0 @@
-@model SchoolClass
-<div asp-validation-summary="All" style="color:red"></div>
-<p><label asp-for="CourseCode"></label><br /><input asp-for="CourseCode" /><span asp-validation-for="CourseCode" style="color:red"></span></p>
-<p><label asp-for="CourseName"></label><br /><input asp-for="CourseName" /><span asp-validation-for="CourseName" style="color:red"></span></p>
-<p><label asp-for="Section"></label><br /><input asp-for="Section" /><span asp-validation-for="Section" style="color:red"></span></p>
-<p><label asp-for="ProfessorId"></label><br />
-   <select asp-for="ProfessorId" asp-items="@((SelectList)ViewBag.Professors)"><option value="">(none)</option></select>
-   <span asp-validation-for="ProfessorId" style="color:red"></span></p>

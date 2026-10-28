@@ -4,47 +4,36 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BenildeTrack.Data;
 
+// The gateway to the database. Each DbSet below becomes one table.
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-    public DbSet<SchoolClass> Classes => Set<SchoolClass>();
-    public DbSet<Violation> Violations => Set<Violation>();
-    public DbSet<Absence> Absences => Set<Absence>();
+    public DbSet<Course> Courses => Set<Course>();
+    public DbSet<Subject> Subjects => Set<Subject>();
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
     public DbSet<ExcuseDocument> ExcuseDocuments => Set<ExcuseDocument>();
-
-    public DbSet<HandbookOffense> HandbookOffenses => Set<HandbookOffense>();
+    public DbSet<Violation> Violations => Set<Violation>();
+    public DbSet<Requirement> Requirements => Set<Requirement>();
+    public DbSet<CompletedRequirement> CompletedRequirements => Set<CompletedRequirement>();
+    public DbSet<HandbookSection> HandbookSections => Set<HandbookSection>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        // Identity needs this line, do not remove it.
         base.OnModelCreating(builder);
 
-        builder.Entity<Violation>()
-            .HasOne(v => v.Student).WithMany()
-            .HasForeignKey(v => v.StudentId).OnDelete(DeleteBehavior.Restrict);
+        // Safety nets: the database itself refuses duplicates.
+        builder.Entity<Enrollment>().HasIndex(e => new { e.StudentId, e.SubjectId }).IsUnique();
+        builder.Entity<CompletedRequirement>().HasIndex(c => new { c.StudentId, c.RequirementId }).IsUnique();
+        builder.Entity<AttendanceRecord>().HasIndex(a => new { a.StudentId, a.SubjectId, a.Date }).IsUnique();
 
-        builder.Entity<SchoolClass>()
-            .HasOne(c => c.Professor).WithMany()
-            .HasForeignKey(c => c.ProfessorId).OnDelete(DeleteBehavior.SetNull);
-
-        builder.Entity<Absence>()
-            .HasOne(a => a.Student).WithMany()
-            .HasForeignKey(a => a.StudentId).OnDelete(DeleteBehavior.Restrict);
-
-        builder.Entity<Absence>()
-            .HasOne(a => a.Class).WithMany()
-            .HasForeignKey(a => a.ClassId).OnDelete(DeleteBehavior.Restrict);
-
-        builder.Entity<Absence>()
-            .HasOne(a => a.ExcuseDocument).WithMany()
-            .HasForeignKey(a => a.ExcuseDocumentId).OnDelete(DeleteBehavior.SetNull);
-
-        builder.Entity<ExcuseDocument>()
-            .HasOne(d => d.Student).WithMany()
-            .HasForeignKey(d => d.StudentId).OnDelete(DeleteBehavior.Restrict);
-
-        builder.Entity<ExcuseDocument>()
-            .HasOne(d => d.Professor).WithMany()
-            .HasForeignKey(d => d.ProfessorId).OnDelete(DeleteBehavior.Restrict);
+        // Deleting a professor must never silently delete their subjects and every attendance record.
+        builder.Entity<Subject>()
+            .HasOne(s => s.Professor)
+            .WithMany()
+            .HasForeignKey(s => s.ProfessorId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

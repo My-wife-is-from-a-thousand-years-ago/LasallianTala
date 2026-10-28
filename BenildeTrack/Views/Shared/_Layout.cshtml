@@ -1,58 +1,101 @@
+@inject IWebHostEnvironment Env
+@{
+    var current = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+
+    // Bootstrap classes for one sidebar link. The active page gets a white pill with green text.
+    string NavClass(params string[] controllers) =>
+        controllers.Contains(current) ? "nav-link active bg-white text-success fw-semibold" : "nav-link text-white";
+
+    var navTala = NavClass("Tala");
+    var navDashboard = NavClass("Dashboard", "Campus", "Attendance", "Students", "Subjects", "Excuses", "Accounts");
+    var navHandbook = NavClass("Handbook");
+    var navProfile = NavClass("Profile");
+
+    bool signedIn = User.Identity?.IsAuthenticated == true;
+    string role = User.IsInRole(AppRoles.Admin) ? "Admin" : User.IsInRole(AppRoles.Professor) ? "Professor" : "Student";
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BenildeTrack</title>
+    <title>@ViewData["Title"] - @AppInfo.Name</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 </head>
-<body>
-    <header>
-        <h2>BenildeTrack</h2>
-        <nav>
-            <a asp-controller="Home" asp-action="Index">Home</a>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <text> | </text><a asp-controller="Dashboard" asp-action="Index">Dashboard</a>
-            }
-            @if (User.IsInRole(AppRoles.Administrator))
-            {
-                <text> | </text><a asp-controller="Users" asp-action="Index">User Accounts</a>
-                <text> | </text><a asp-controller="Users" asp-action="Index" asp-route-role="Student">Students</a>
-                <text> | </text><a asp-controller="Classes" asp-action="Index">Classes</a>
-            }
-            @if (User.IsInRole(AppRoles.Administrator) || User.IsInRole(AppRoles.Student))
-            {
-                <text> | </text><a asp-controller="Violations" asp-action="Index">Violations</a>
-            }
-            @if (User.IsInRole(AppRoles.Professor) || User.IsInRole(AppRoles.Student))
-            {
-                <text> | </text><a asp-controller="Absences" asp-action="Index">Absences</a>
-                <text> | </text><a asp-controller="ExcuseDocuments" asp-action="Index">Excuse Documents</a>
-            }
-            @if (User.IsInRole(AppRoles.Student))
-            {
-                <text> | </text><a asp-controller="Handbook" asp-action="Index">Ask the Handbook</a>
-            }
-            <text> | </text>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <form asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
-                    <button type="submit">Logout (@User.Identity.Name)</button>
-                </form>
-            }
-            else
-            {
-                <a asp-controller="Account" asp-action="Login">Login</a>
-            }
-        </nav>
-        <hr />
-    </header>
-    <main>
-        @if (TempData["Error"] != null)
-        {
-            <p style="color:red">@TempData["Error"]</p>
-        }
-        @RenderBody()
-    </main>
+<body class="bg-light">
+@if (signedIn)
+{
+    @* Logged in: green sidebar on the left, page on the right. Same sidebar for every role. *@
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-12 col-md-3 col-lg-2 bg-success text-white d-flex flex-column p-3">
+                <a class="fs-4 fw-bold text-white text-decoration-none mb-4" asp-controller="Tala" asp-action="Index">@AppInfo.Name</a>
+
+                <ul class="nav nav-pills flex-column gap-1">
+                    <li class="nav-item"><a class="@navTala" asp-controller="Tala" asp-action="Index">Ask Tala</a></li>
+                    <li class="nav-item"><a class="@navDashboard" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                    <li class="nav-item"><a class="@navHandbook" asp-controller="Handbook" asp-action="Index">Handbook</a></li>
+                    <li class="nav-item"><a class="@navProfile" asp-controller="Profile" asp-action="Index">Profile</a></li>
+                </ul>
+
+                <div class="mt-auto pt-4">
+                    <div class="small text-truncate">@User.Identity?.Name</div>
+                    <span class="badge bg-light text-success mb-2">@role</span>
+                    <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                        <button type="submit" class="btn btn-outline-light btn-sm w-100">Log out</button>
+                    </form>
+                </div>
+            </nav>
+
+            <main class="col-12 col-md-9 col-lg-10 p-4">
+                @* One place for the messages controllers leave in TempData. *@
+                @if (TempData["Message"] != null)
+                {
+                    <div class="alert alert-success">@TempData["Message"]</div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["Error"]</div>
+                }
+
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
+else
+{
+    @* Logged out: login and register pages appear in a centered card. *@
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-5">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white fs-4 fw-bold">@AppInfo.Name</div>
+                    <div class="card-body">
+                        @RenderBody()
+                    </div>
+                </div>
+
+                @if (Env.IsDevelopment())
+                {
+                    <div class="alert alert-light border small mt-3">
+                        <strong>Demo accounts</strong> (development only). Password: <code>Demo@12345</code><br />
+                        admin@demo.test, prof@demo.test, ana@demo.test, ben@demo.test
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // The built-in login/register pages show an empty "external login" column and a narrow form.
+        document.querySelectorAll(".col-md-6").forEach(column => column.remove());
+        document.querySelectorAll(".col-md-4").forEach(column => column.className = "col-12");
+    </script>
+}
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

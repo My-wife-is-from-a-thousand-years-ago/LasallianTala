@@ -1,0 +1,43 @@
+@model List<AttendanceRecord>
+@{
+    ViewData["Title"] = "Submit excuse";
+    var subject = Model[0].Subject!;
+}
+
+<h1 class="h3 mb-4">Submit excuse for @subject.Code - @subject.Name</h1>
+
+<form method="post" asp-action="Create" enctype="multipart/form-data" class="card shadow-sm col-xl-8">
+    <div class="card-body">
+        <input type="hidden" name="subjectId" value="@subject.Id" />
+
+        <p class="fw-semibold mb-1">1. Which dates does this excuse cover?</p>
+        @foreach (var r in Model)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="recordIds" value="@r.Id" id="rec-@r.Id" />
+                <label class="form-check-label" for="rec-@r.Id">@r.Date.ToString("MMM d, yyyy") - @r.Type</label>
+            </div>
+        }
+
+        <label class="fw-semibold mt-4 mb-1" for="reason">2. Reason</label>
+        <input id="reason" name="reason" class="form-control" maxlength="200" required placeholder="For example: fever, family emergency" />
+
+        <label class="fw-semibold mt-4 mb-1" for="picture">3. Picture of your letter or medical paper (JPG or PNG, max 5 MB)</label>
+        <input id="picture" type="file" name="picture" class="form-control" accept="image/png,image/jpeg" />
+
+        <p class="fw-semibold mt-4 mb-1">4. Sign here (black pen on white)</p>
+        <canvas id="board" class="border bg-white w-100" width="600" height="200"></canvas>
+        <input type="hidden" id="signatureData" name="signatureData" />
+        <button type="button" id="clear-board" class="btn btn-sm btn-outline-secondary mt-2">Clear</button>
+        <div class="form-text">Send a picture, a signature, or both.</div>
+
+        <div class="mt-4">
+            <button class="btn btn-success">Submit excuse</button>
+            <a class="btn btn-link link-success" asp-controller="Dashboard" asp-action="Index">Cancel</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/whiteboard.js" asp-append-version="true"></script>
+}

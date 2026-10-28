@@ -1,0 +1,35 @@
+@model AccountFormViewModel
+@{
+    bool isEdit = Model.Id != null;
+}
+
+<div asp-validation-summary="All" class="text-danger"></div>
+<input type="hidden" asp-for="Id" />
+
+<div class="mb-3">
+    <label asp-for="Email" class="form-label"></label>
+    @* The email is the login name, so it can only be set when creating. *@
+    <input asp-for="Email" class="form-control" readonly="@isEdit" />
+</div>
+
+<div class="mb-3">
+    <label asp-for="FullName" class="form-label"></label>
+    <input asp-for="FullName" class="form-control" />
+</div>
+
+<div class="mb-3">
+    <label asp-for="Role" class="form-label"></label>
+    <select asp-for="Role" class="form-select" asp-items="@(new SelectList(AppRoles.All))"></select>
+</div>
+
+<div class="mb-3">
+    <label asp-for="CourseId" class="form-label">Course (students only)</label>
+    <select asp-for="CourseId" class="form-select" asp-items="@(new SelectList(Model.Courses, "Id", "Name"))">
+        <option value="">(none)</option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Password" class="form-label">@(isEdit ? "New password (leave empty to keep the current one)" : "Password")</label>
+    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+</div>
