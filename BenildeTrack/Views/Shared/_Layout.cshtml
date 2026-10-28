@@ -1,14 +1,18 @@
+@inject IWebHostEnvironment Env
 @{
-    // Which sidebar item is highlighted, based on the current controller.
     var current = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
-    string Active(params string[] controllers) => controllers.Contains(current) ? "active" : "";
 
-    var navDashboard = Active("Dashboard", "Campus", "Attendance", "Students");
-    var navHandbook = Active("Handbook");
-    var navProfile = Active("Profile");
+    // Bootstrap classes for one sidebar link. The active page gets a white pill with green text.
+    string NavClass(params string[] controllers) =>
+        controllers.Contains(current) ? "nav-link active bg-white text-success fw-semibold" : "nav-link text-white";
+
+    var navTala = NavClass("Tala");
+    var navDashboard = NavClass("Dashboard", "Campus", "Attendance", "Students", "Subjects", "Excuses", "Accounts");
+    var navHandbook = NavClass("Handbook");
+    var navProfile = NavClass("Profile");
 
     bool signedIn = User.Identity?.IsAuthenticated == true;
-    string role = User.IsInRole(AppRoles.Admin) ? "Admin" : User.IsInRole(AppRoles.Teacher) ? "Teacher" : "Student";
+    string role = User.IsInRole(AppRoles.Admin) ? "Admin" : User.IsInRole(AppRoles.Professor) ? "Professor" : "Student";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -17,55 +21,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - @AppInfo.Name</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body>
+<body class="bg-light">
 @if (signedIn)
 {
-    @* Logged in: sidebar on the left, page content on the right. *@
-    <div class="app">
-        <aside class="sidebar">
-            <a class="brand" asp-controller="Dashboard" asp-action="Index">@AppInfo.Name</a>
+    @* Logged in: green sidebar on the left, page on the right. Same sidebar for every role. *@
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-12 col-md-3 col-lg-2 bg-success text-white d-flex flex-column p-3">
+                <a class="fs-4 fw-bold text-white text-decoration-none mb-4" asp-controller="Tala" asp-action="Index">@AppInfo.Name</a>
 
-            <nav class="nav-list">
-                <a class="nav-item @navDashboard" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
-                <a class="nav-item @navHandbook" asp-controller="Handbook" asp-action="Index">Handbook</a>
-                <a class="nav-item @navProfile" asp-controller="Profile" asp-action="Index">Profile</a>
+                <ul class="nav nav-pills flex-column gap-1">
+                    <li class="nav-item"><a class="@navTala" asp-controller="Tala" asp-action="Index">Ask Tala</a></li>
+                    <li class="nav-item"><a class="@navDashboard" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+                    <li class="nav-item"><a class="@navHandbook" asp-controller="Handbook" asp-action="Index">Handbook</a></li>
+                    <li class="nav-item"><a class="@navProfile" asp-controller="Profile" asp-action="Index">Profile</a></li>
+                </ul>
+
+                <div class="mt-auto pt-4">
+                    <div class="small text-truncate">@User.Identity?.Name</div>
+                    <span class="badge bg-light text-success mb-2">@role</span>
+                    <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                        <button type="submit" class="btn btn-outline-light btn-sm w-100">Log out</button>
+                    </form>
+                </div>
             </nav>
 
-            <div class="sidebar-footer">
-                <div class="small text-truncate">@User.Identity?.Name</div>
-                <div class="small text-muted mb-2">@role</div>
-                <form method="post" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Log out</button>
-                </form>
-            </div>
-        </aside>
+            <main class="col-12 col-md-9 col-lg-10 p-4">
+                @* One place for the messages controllers leave in TempData. *@
+                @if (TempData["Message"] != null)
+                {
+                    <div class="alert alert-success">@TempData["Message"]</div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["Error"]</div>
+                }
 
-        <main class="content">
-            @* One place for the messages controllers leave in TempData. *@
-            @if (TempData["Message"] != null)
-            {
-                <div class="alert alert-success">@TempData["Message"]</div>
-            }
-            @if (TempData["Error"] != null)
-            {
-                <div class="alert alert-danger">@TempData["Error"]</div>
-            }
-
-            @RenderBody()
-        </main>
+                @RenderBody()
+            </main>
+        </div>
     </div>
 }
 else
 {
-    @* Logged out: login and register pages show in a small centered card. *@
-    <div class="auth-wrap">
-        <div class="auth-card">
-            <div class="auth-brand">@AppInfo.Name</div>
-            @RenderBody()
+    @* Logged out: login and register pages appear in a centered card. *@
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-5">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white fs-4 fw-bold">@AppInfo.Name</div>
+                    <div class="card-body">
+                        @RenderBody()
+                    </div>
+                </div>
+
+                @if (Env.IsDevelopment())
+                {
+                    <div class="alert alert-light border small mt-3">
+                        <strong>Demo accounts</strong> (development only). Password: <code>Demo@12345</code><br />
+                        admin@demo.test, prof@demo.test, ana@demo.test, ben@demo.test
+                    </div>
+                }
+            </div>
         </div>
     </div>
+
+    <script>
+        // The built-in login/register pages show an empty "external login" column and a narrow form.
+        document.querySelectorAll(".col-md-6").forEach(column => column.remove());
+        document.querySelectorAll(".col-md-4").forEach(column => column.className = "col-12");
+    </script>
 }
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

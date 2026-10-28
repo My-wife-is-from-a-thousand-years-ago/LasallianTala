@@ -1,0 +1,62 @@
+@model ProfessorDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1 class="h3 mb-4">Dashboard</h1>
+
+@* ---------- Excuses waiting for a decision ---------- *@
+@if (Model.PendingExcuses.Any())
+{
+    <div class="card border-warning shadow-sm mb-4">
+        <div class="card-header bg-warning fw-semibold">Excuses waiting for your review (@Model.PendingExcuses.Count)</div>
+        <div class="list-group list-group-flush">
+            @foreach (var d in Model.PendingExcuses)
+            {
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>@d.Student?.DisplayName, @d.Subject?.Code, @d.DateSubmitted.ToString("MMM d, yyyy")</span>
+                    <a class="btn btn-sm btn-success" asp-controller="Excuses" asp-action="Review" asp-route-id="@d.Id">Review</a>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@* ---------- Every subject with its students' records ---------- *@
+@if (!Model.Subjects.Any())
+{
+    <p class="text-muted">No subjects are assigned to you yet.</p>
+}
+
+@foreach (var roster in Model.Subjects)
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">@roster.Subject.Code - @roster.Subject.Name (limit @roster.Subject.MaxPoints pts)</span>
+            <a class="btn btn-sm btn-light" asp-controller="Attendance" asp-action="Index" asp-route-subjectId="@roster.Subject.Id">Record attendance</a>
+        </div>
+
+        @if (!roster.Rows.Any())
+        {
+            <div class="card-body text-muted">No students enrolled yet.</div>
+        }
+        else
+        {
+            <table class="table table-striped align-middle mb-0">
+                <thead><tr><th>Student</th><th>Absences</th><th>Lates</th><th>Dropout points</th></tr></thead>
+                <tbody>
+                    @foreach (var row in roster.Rows)
+                    {
+                        var color = SubjectPoints.ColorOf(SubjectPoints.PercentOf(row.Points, roster.Subject.MaxPoints));
+                        <tr>
+                            <td>@row.Student.DisplayName</td>
+                            <td>@row.Absences</td>
+                            <td>@row.Lates</td>
+                            <td><span class="badge bg-@color">@row.Points / @roster.Subject.MaxPoints</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}

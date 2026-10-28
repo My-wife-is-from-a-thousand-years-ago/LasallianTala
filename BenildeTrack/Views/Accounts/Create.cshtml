@@ -1,0 +1,14 @@
+@model AccountFormViewModel
+@{
+    ViewData["Title"] = "Create account";
+}
+
+<h1 class="h3 mb-4">Create account</h1>
+
+<form method="post" asp-action="Create" class="card shadow-sm col-lg-6">
+    <div class="card-body">
+        <partial name="_AccountForm" model="Model" />
+        <button class="btn btn-success">Create</button>
+        <a class="btn btn-link link-success" asp-controller="Dashboard" asp-action="Index">Cancel</a>
+    </div>
+</form>

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BenildeTrack.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261026074822_InitialCreate")]
+    [Migration("20261028142420_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -31,6 +31,9 @@ namespace BenildeTrack.Data.Migrations
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("CourseId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -78,6 +81,8 @@ namespace BenildeTrack.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CourseId");
+
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -94,24 +99,29 @@ namespace BenildeTrack.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("CourseId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("ExcuseDocumentId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("StudentId")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Type")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseId");
+                    b.HasIndex("ExcuseDocumentId");
 
-                    b.HasIndex("StudentId", "CourseId", "Date")
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("StudentId", "SubjectId", "Date")
                         .IsUnique();
 
                     b.ToTable("AttendanceRecords");
@@ -153,20 +163,11 @@ namespace BenildeTrack.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("MaxPoints")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TeacherId")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("TeacherId");
 
                     b.ToTable("Courses");
                 });
@@ -177,21 +178,62 @@ namespace BenildeTrack.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("CourseId")
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubjectId");
+
+                    b.HasIndex("StudentId", "SubjectId")
+                        .IsUnique();
+
+                    b.ToTable("Enrollments");
+                });
+
+            modelBuilder.Entity("BenildeTrack.Models.ExcuseDocument", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DateSubmitted")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PictureFileName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SignatureFileName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("StudentId")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("SubjectId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseId");
+                    b.HasIndex("StudentId");
 
-                    b.HasIndex("StudentId", "CourseId")
-                        .IsUnique();
+                    b.HasIndex("SubjectId");
 
-                    b.ToTable("Enrollments");
+                    b.ToTable("ExcuseDocuments");
                 });
 
             modelBuilder.Entity("BenildeTrack.Models.HandbookSection", b =>
@@ -199,6 +241,10 @@ namespace BenildeTrack.Data.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Keywords")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Number")
                         .IsRequired()
@@ -237,6 +283,39 @@ namespace BenildeTrack.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Requirements");
+                });
+
+            modelBuilder.Entity("BenildeTrack.Models.Subject", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MaxPoints")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProfessorId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("ProfessorId");
+
+                    b.ToTable("Subjects");
                 });
 
             modelBuilder.Entity("BenildeTrack.Models.Violation", b =>
@@ -402,13 +481,20 @@ namespace BenildeTrack.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("BenildeTrack.Models.AttendanceRecord", b =>
+            modelBuilder.Entity("BenildeTrack.Models.ApplicationUser", b =>
                 {
                     b.HasOne("BenildeTrack.Models.Course", "Course")
                         .WithMany()
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CourseId");
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("BenildeTrack.Models.AttendanceRecord", b =>
+                {
+                    b.HasOne("BenildeTrack.Models.ExcuseDocument", "ExcuseDocument")
+                        .WithMany("AttendanceRecords")
+                        .HasForeignKey("ExcuseDocumentId");
 
                     b.HasOne("BenildeTrack.Models.ApplicationUser", "Student")
                         .WithMany()
@@ -416,9 +502,17 @@ namespace BenildeTrack.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Course");
+                    b.HasOne("BenildeTrack.Models.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExcuseDocument");
 
                     b.Navigation("Student");
+
+                    b.Navigation("Subject");
                 });
 
             modelBuilder.Entity("BenildeTrack.Models.CompletedRequirement", b =>
@@ -440,18 +534,45 @@ namespace BenildeTrack.Data.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("BenildeTrack.Models.Course", b =>
+            modelBuilder.Entity("BenildeTrack.Models.Enrollment", b =>
                 {
-                    b.HasOne("BenildeTrack.Models.ApplicationUser", "Teacher")
+                    b.HasOne("BenildeTrack.Models.ApplicationUser", "Student")
                         .WithMany()
-                        .HasForeignKey("TeacherId")
+                        .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Teacher");
+                    b.HasOne("BenildeTrack.Models.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Subject");
                 });
 
-            modelBuilder.Entity("BenildeTrack.Models.Enrollment", b =>
+            modelBuilder.Entity("BenildeTrack.Models.ExcuseDocument", b =>
+                {
+                    b.HasOne("BenildeTrack.Models.ApplicationUser", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BenildeTrack.Models.Subject", "Subject")
+                        .WithMany()
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Subject");
+                });
+
+            modelBuilder.Entity("BenildeTrack.Models.Subject", b =>
                 {
                     b.HasOne("BenildeTrack.Models.Course", "Course")
                         .WithMany()
@@ -459,15 +580,15 @@ namespace BenildeTrack.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BenildeTrack.Models.ApplicationUser", "Student")
+                    b.HasOne("BenildeTrack.Models.ApplicationUser", "Professor")
                         .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("ProfessorId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Course");
 
-                    b.Navigation("Student");
+                    b.Navigation("Professor");
                 });
 
             modelBuilder.Entity("BenildeTrack.Models.Violation", b =>
@@ -530,6 +651,11 @@ namespace BenildeTrack.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("BenildeTrack.Models.ExcuseDocument", b =>
+                {
+                    b.Navigation("AttendanceRecords");
                 });
 #pragma warning restore 612, 618
         }

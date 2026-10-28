@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace BenildeTrack.Services;
+namespace BenildeTrack.Services.Tala;
 
 // The ONLY class that knows Gemini exists. Returns null on any failure so callers can fall back.
 public class GeminiClient

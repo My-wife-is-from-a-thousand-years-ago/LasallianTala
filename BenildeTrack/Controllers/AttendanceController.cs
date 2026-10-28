@@ -1,5 +1,6 @@
 using BenildeTrack.Data;
 using BenildeTrack.Models;
+using BenildeTrack.Services;
 using BenildeTrack.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -8,78 +9,69 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BenildeTrack.Controllers;
 
-// Teachers record absences and lates for the courses THEY teach.
-// No business rules here yet, so it talks to the database directly.
-[Authorize(Roles = AppRoles.Teacher)]
+// Professors record absences and lates for the subjects THEY teach.
+// Adding and removing a record has no business rules, so it talks to the database directly.
+[Authorize(Roles = AppRoles.Professor)]
 public class AttendanceController : Controller
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly StandingService _standing;
 
-    public AttendanceController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public AttendanceController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, StandingService standing)
     {
         _db = db;
         _userManager = userManager;
+        _standing = standing;
     }
 
-    // A teacher may only open their own courses.
-    private async Task<Course?> MyCourseAsync(int courseId)
+    // A professor may only open their own subjects.
+    private async Task<Subject?> MySubjectAsync(int subjectId)
     {
-        var teacherId = _userManager.GetUserId(User);
-        return await _db.Courses.FirstOrDefaultAsync(c => c.Id == courseId && c.TeacherId == teacherId);
+        var professorId = _userManager.GetUserId(User);
+        return await _db.Subjects.FirstOrDefaultAsync(s => s.Id == subjectId && s.ProfessorId == professorId);
     }
 
-    public async Task<IActionResult> Index(int courseId)
+    public async Task<IActionResult> Index(int subjectId)
     {
-        var course = await MyCourseAsync(courseId);
-        if (course == null) return NotFound();
+        var subject = await MySubjectAsync(subjectId);
+        if (subject == null) return NotFound();
 
-        var students = await _db.Enrollments
-            .Where(e => e.CourseId == courseId)
-            .Select(e => e.Student!)
-            .ToListAsync();
-        students = students.OrderBy(s => s.DisplayName).ToList();
-
-        var records = await _db.AttendanceRecords
+        var recent = await _db.AttendanceRecords
             .Include(r => r.Student)
-            .Where(r => r.CourseId == courseId)
+            .Where(r => r.SubjectId == subjectId)
             .OrderByDescending(r => r.Date)
+            .Take(15)
             .ToListAsync();
 
         var model = new AttendanceViewModel
         {
-            Course = course,
-            Students = students,
-            Recent = records.Take(15).ToList(),
-            Roster = students.Select(s => new RosterRow
-            {
-                Student = s,
-                Absences = records.Count(r => r.StudentId == s.Id && r.Type == AttendanceType.Absent),
-                Lates = records.Count(r => r.StudentId == s.Id && r.Type == AttendanceType.Late)
-            }).ToList()
+            Subject = subject,
+            Roster = await _standing.GetRosterAsync(subjectId),
+            Recent = recent
         };
         return View(model);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Add(int courseId, string studentId, DateTime date, AttendanceType type)
+    public async Task<IActionResult> Add(int subjectId, string studentId, DateTime date, AttendanceType type)
     {
-        var course = await MyCourseAsync(courseId);
-        if (course == null) return NotFound();
+        var subject = await MySubjectAsync(subjectId);
+        if (subject == null) return NotFound();
 
         if (date == default)
         {
             TempData["Error"] = "Pick a date.";
-            return RedirectToAction(nameof(Index), new { courseId });
+            return RedirectToAction(nameof(Index), new { subjectId });
         }
 
-        bool enrolled = await _db.Enrollments.AnyAsync(e => e.CourseId == courseId && e.StudentId == studentId);
+        bool enrolled = await _db.Enrollments.AnyAsync(e => e.SubjectId == subjectId && e.StudentId == studentId);
         bool alreadyRecorded = await _db.AttendanceRecords.AnyAsync(r =>
-            r.CourseId == courseId && r.StudentId == studentId && r.Date == date.Date);
+            r.SubjectId == subjectId && r.StudentId == studentId && r.Date == date.Date);
 
         if (!enrolled)
         {
-            TempData["Error"] = "That student is not in this course.";
+            TempData["Error"] = "That student is not in this subject.";
         }
         else if (alreadyRecorded)
         {
@@ -90,7 +82,7 @@ public class AttendanceController : Controller
             _db.AttendanceRecords.Add(new AttendanceRecord
             {
                 StudentId = studentId,
-                CourseId = courseId,
+                SubjectId = subjectId,
                 Date = date.Date,
                 Type = type
             });
@@ -98,17 +90,17 @@ public class AttendanceController : Controller
             TempData["Message"] = "Recorded.";
         }
 
-        return RedirectToAction(nameof(Index), new { courseId });
+        return RedirectToAction(nameof(Index), new { subjectId });
     }
 
-    // Fix a mistake: delete a record from one of MY courses.
+    // Fix a mistake: delete a record from one of MY subjects.
     [HttpPost]
-    public async Task<IActionResult> Remove(int courseId, int recordId)
+    public async Task<IActionResult> Remove(int subjectId, int recordId)
     {
-        var course = await MyCourseAsync(courseId);
-        if (course == null) return NotFound();
+        var subject = await MySubjectAsync(subjectId);
+        if (subject == null) return NotFound();
 
-        var record = await _db.AttendanceRecords.FirstOrDefaultAsync(r => r.Id == recordId && r.CourseId == courseId);
+        var record = await _db.AttendanceRecords.FirstOrDefaultAsync(r => r.Id == recordId && r.SubjectId == subjectId);
         if (record != null)
         {
             _db.AttendanceRecords.Remove(record);
@@ -116,6 +108,6 @@ public class AttendanceController : Controller
             TempData["Message"] = "Record removed.";
         }
 
-        return RedirectToAction(nameof(Index), new { courseId });
+        return RedirectToAction(nameof(Index), new { subjectId });
     }
 }

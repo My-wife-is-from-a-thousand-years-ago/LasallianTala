@@ -25,7 +25,7 @@ public class HandbookService
         return _db.HandbookSections.OrderBy(s => s.Number).ToListAsync();
     }
 
-    // Scores each section by how many of the question's words it contains. Best matches first.
+    // Scores each section by how many of the question's words appear in its title, keywords or text.
     public async Task<List<HandbookSection>> SearchAsync(string query)
     {
         var cleaned = new string(query.ToLowerInvariant().Where(c => char.IsLetterOrDigit(c) || c == ' ').ToArray());
@@ -41,10 +41,10 @@ public class HandbookService
         var sections = await _db.HandbookSections.ToListAsync();
 
         return sections
-            .Select(s => new
+            .Select(s =>
             {
-                Section = s,
-                Score = words.Count(w => (s.Title + " " + s.Text).ToLowerInvariant().Contains(w))
+                var haystack = (s.Title + " " + s.Keywords + " " + s.Text).ToLowerInvariant();
+                return new { Section = s, Score = words.Count(w => haystack.Contains(w)) };
             })
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)

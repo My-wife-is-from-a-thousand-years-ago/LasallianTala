@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "Ask Tala";
+}
+
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-9">
+
+        <div id="hello" class="text-center my-5 py-5">
+            <h1 class="display-5 fw-semibold text-success">Meet Tala!</h1>
+            <p class="lead text-muted">Ask me anything school-related!</p>
+        </div>
+
+        <div id="chat" class="vstack gap-3 mb-4"></div>
+
+        @* Stays at the bottom of the screen while the chat grows. *@
+        <form id="ask-form" class="position-sticky bottom-0 bg-light py-3" data-url="@Url.Action("Ask", "Tala")">
+            @Html.AntiForgeryToken()
+            <div class="input-group input-group-lg">
+                <input id="question" type="text" class="form-control" maxlength="300" autocomplete="off"
+                       placeholder="Try: does shouting in class count as a violation?" />
+                <button type="submit" class="btn btn-success">Send</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/tala.js" asp-append-version="true"></script>
+}

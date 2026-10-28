@@ -1,6 +1,7 @@
 using BenildeTrack.Data;
 using BenildeTrack.Models;
 using BenildeTrack.Services;
+using BenildeTrack.Services.Tala;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
 
-// Login system (Identity). AddRoles lets us use Student / Teacher / Admin roles.
+// Login system (Identity). AddRoles lets us use Student / Professor / Admin roles.
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
@@ -24,6 +25,8 @@ builder.Services.AddControllersWithViews(options =>
 // Our own classes. Controllers receive them through their constructors.
 builder.Services.AddScoped<StandingService>();
 builder.Services.AddScoped<HandbookService>();
+builder.Services.AddScoped<ExcuseService>();
+builder.Services.AddScoped<FileStorage>();
 builder.Services.AddScoped<TalaService>();
 builder.Services.AddHttpClient<GeminiClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
 

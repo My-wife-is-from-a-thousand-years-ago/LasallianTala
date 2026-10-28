@@ -17,7 +17,7 @@ public static class SeedData
 
         // Roles are real data, so they are created in every environment.
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        foreach (var role in new[] { AppRoles.Student, AppRoles.Teacher, AppRoles.Admin })
+        foreach (var role in AppRoles.All)
         {
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
@@ -32,16 +32,23 @@ public static class SeedData
         // Only fill an empty database.
         if (await db.Users.AnyAsync()) return;
 
+        // Courses (degree programs) come first because students point at one.
+        var bsis = new Course { Code = "BSIS", Name = "BS Information Systems" };
+        var bscs = new Course { Code = "BSCS", Name = "BS Computer Science" };
+        db.Courses.AddRange(bsis, bscs);
+        await db.SaveChangesAsync();
+
         var users = services.GetRequiredService<UserManager<ApplicationUser>>();
         await CreateUserAsync(users, "admin@demo.test", "Demo Admin", AppRoles.Admin);
-        var teacher = await CreateUserAsync(users, "teacher@demo.test", "Prof. Santos", AppRoles.Teacher);
-        var ana = await CreateUserAsync(users, "ana@demo.test", "Ana Reyes", AppRoles.Student);
-        var ben = await CreateUserAsync(users, "ben@demo.test", "Ben Cruz", AppRoles.Student);
+        var prof = await CreateUserAsync(users, "prof@demo.test", "Prof. Santos", AppRoles.Professor);
+        var ana = await CreateUserAsync(users, "ana@demo.test", "Ana Reyes", AppRoles.Student, bsis.Id);
+        var ben = await CreateUserAsync(users, "ben@demo.test", "Ben Cruz", AppRoles.Student, bsis.Id);
 
-        // Two courses: one with a 9-point limit and one with an 18-point limit.
-        var demo101 = new Course { Code = "DEMO101", Subject = "Intro to Demo", MaxPoints = 9, TeacherId = teacher.Id };
-        var demo102 = new Course { Code = "DEMO102", Subject = "Demo Practice", MaxPoints = 18, TeacherId = teacher.Id };
-        db.Courses.AddRange(demo101, demo102);
+        // ADD YOUR OWN SUBJECTS HERE: one line per subject. MaxPoints is 9 or 18.
+        var demo101 = new Subject { Code = "DEMO101", Name = "Intro to Demo", MaxPoints = 9, CourseId = bsis.Id, ProfessorId = prof.Id };
+        var demo102 = new Subject { Code = "DEMO102", Name = "Demo Practice", MaxPoints = 18, CourseId = bsis.Id, ProfessorId = prof.Id };
+        var demo201 = new Subject { Code = "DEMO201", Name = "Advanced Demo", MaxPoints = 9, CourseId = bscs.Id, ProfessorId = prof.Id };
+        db.Subjects.AddRange(demo101, demo102, demo201);
 
         // The shared checklist. The four objectives are the real ones; clearances are placeholders.
         var benire1 = new Requirement { Kind = RequirementKind.Objective, Name = "Benire 1", Guide = "Complete CSBLIFE subject" };
@@ -53,30 +60,30 @@ public static class SeedData
             new Requirement { Kind = RequirementKind.Clearance, Name = "Library clearance", Guide = "PLACEHOLDER: return all borrowed books" },
             new Requirement { Kind = RequirementKind.Clearance, Name = "Finance clearance", Guide = "PLACEHOLDER: settle any balance" });
 
-        // PLACEHOLDER handbook text. Replace with the real handbook.
+        // PLACEHOLDER handbook text. Replace with the real handbook. Keywords help search find sections cheaply.
         db.HandbookSections.AddRange(
-            new HandbookSection { Number = "X.1", Title = "Disruptive noise in class", Text = "PLACEHOLDER. Shouting or loud noise that disrupts a class." },
-            new HandbookSection { Number = "X.2", Title = "Academic dishonesty", Text = "PLACEHOLDER. Copying work or using unauthorized help during an exam." },
-            new HandbookSection { Number = "X.3", Title = "Dress code", Text = "PLACEHOLDER. Wearing the proper uniform or attire on campus." },
-            new HandbookSection { Number = "X.4", Title = "Attendance and dropout points", Text = "PLACEHOLDER. An absence is 3 points and a late is 1 point. Reaching the course limit means dropout." });
+            new HandbookSection { Number = "X.1", Title = "Disruptive noise in class", Keywords = "shouting, yelling, yell, loud, noise, talking", Text = "PLACEHOLDER. Shouting or loud noise that disrupts a class." },
+            new HandbookSection { Number = "X.2", Title = "Academic dishonesty", Keywords = "cheating, copying, plagiarism, exam", Text = "PLACEHOLDER. Copying work or using unauthorized help during an exam." },
+            new HandbookSection { Number = "X.3", Title = "Dress code", Keywords = "uniform, attire, clothes, shirt", Text = "PLACEHOLDER. Wearing the proper uniform or attire on campus." },
+            new HandbookSection { Number = "X.4", Title = "Attendance and dropout points", Keywords = "absent, absence, late, tardy, dropout, points", Text = "PLACEHOLDER. An absence is 3 points and a late is 1 point. Reaching the subject limit means dropout." });
 
-        // Save now so the courses get their Ids.
+        // Save now so the subjects get their Ids.
         await db.SaveChangesAsync();
 
         db.Enrollments.AddRange(
-            new Enrollment { StudentId = ana.Id, CourseId = demo101.Id },
-            new Enrollment { StudentId = ana.Id, CourseId = demo102.Id },
-            new Enrollment { StudentId = ben.Id, CourseId = demo101.Id });
+            new Enrollment { StudentId = ana.Id, SubjectId = demo101.Id },
+            new Enrollment { StudentId = ana.Id, SubjectId = demo102.Id },
+            new Enrollment { StudentId = ben.Id, SubjectId = demo101.Id });
 
         // Ana: 4 of 9 points in DEMO101 and 1 of 18 in DEMO102. Ben: 7 of 9 in DEMO101.
         var today = DateTime.Today;
         db.AttendanceRecords.AddRange(
-            new AttendanceRecord { StudentId = ana.Id, CourseId = demo101.Id, Date = today.AddDays(-14), Type = AttendanceType.Absent },
-            new AttendanceRecord { StudentId = ana.Id, CourseId = demo101.Id, Date = today.AddDays(-7), Type = AttendanceType.Late },
-            new AttendanceRecord { StudentId = ana.Id, CourseId = demo102.Id, Date = today.AddDays(-3), Type = AttendanceType.Late },
-            new AttendanceRecord { StudentId = ben.Id, CourseId = demo101.Id, Date = today.AddDays(-21), Type = AttendanceType.Absent },
-            new AttendanceRecord { StudentId = ben.Id, CourseId = demo101.Id, Date = today.AddDays(-14), Type = AttendanceType.Absent },
-            new AttendanceRecord { StudentId = ben.Id, CourseId = demo101.Id, Date = today.AddDays(-7), Type = AttendanceType.Late });
+            new AttendanceRecord { StudentId = ana.Id, SubjectId = demo101.Id, Date = today.AddDays(-14), Type = AttendanceType.Absent },
+            new AttendanceRecord { StudentId = ana.Id, SubjectId = demo101.Id, Date = today.AddDays(-7), Type = AttendanceType.Late },
+            new AttendanceRecord { StudentId = ana.Id, SubjectId = demo102.Id, Date = today.AddDays(-3), Type = AttendanceType.Late },
+            new AttendanceRecord { StudentId = ben.Id, SubjectId = demo101.Id, Date = today.AddDays(-21), Type = AttendanceType.Absent },
+            new AttendanceRecord { StudentId = ben.Id, SubjectId = demo101.Id, Date = today.AddDays(-14), Type = AttendanceType.Absent },
+            new AttendanceRecord { StudentId = ben.Id, SubjectId = demo101.Id, Date = today.AddDays(-7), Type = AttendanceType.Late });
 
         db.Violations.Add(new Violation { StudentId = ana.Id, Title = "Disruptive noise (demo)", Description = "Demo violation: loud disruption during class.", Date = today.AddDays(-5) });
         db.CompletedRequirements.Add(new CompletedRequirement { StudentId = ana.Id, RequirementId = benire1.Id, DateCompleted = today.AddDays(-30) });
@@ -85,9 +92,10 @@ public static class SeedData
     }
 
     // Creates one account and gives it a role. Throws a readable error if Identity rejects it.
-    private static async Task<ApplicationUser> CreateUserAsync(UserManager<ApplicationUser> users, string email, string fullName, string role)
+    private static async Task<ApplicationUser> CreateUserAsync(
+        UserManager<ApplicationUser> users, string email, string fullName, string role, int? courseId = null)
     {
-        var user = new ApplicationUser { UserName = email, Email = email, FullName = fullName, EmailConfirmed = true };
+        var user = new ApplicationUser { UserName = email, Email = email, FullName = fullName, EmailConfirmed = true, CourseId = courseId };
         var result = await users.CreateAsync(user, DemoPassword);
         if (!result.Succeeded)
             throw new Exception("Could not create " + email + ": " + string.Join("; ", result.Errors.Select(e => e.Description)));

@@ -4,12 +4,12 @@
     string? query = ViewBag.Query;
 }
 
-<h1 class="page-title">Handbook</h1>
-<p class="text-muted">Search for a rule. This finds matching sections, it is not an official ruling.</p>
+<h1 class="h3">Handbook</h1>
+<p class="text-muted">Search for a rule. This finds matching sections, it is not an official ruling. For a written answer, use Ask Tala.</p>
 
 <form method="get" asp-action="Index" class="d-flex gap-2 mb-4">
     <input name="q" value="@query" class="form-control" placeholder="Try: shouting in class" />
-    <button class="btn btn-primary">Search</button>
+    <button class="btn btn-success">Search</button>
 </form>
 
 @if (!string.IsNullOrWhiteSpace(query) && !Model.Any())
@@ -19,8 +19,10 @@
 
 @foreach (var s in Model)
 {
-    <div class="panel">
-        <h2 class="panel-title">@s.Number - @s.Title</h2>
-        <p class="mb-0">@s.Text</p>
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <h2 class="h6 card-title text-success">@s.Number - @s.Title</h2>
+            <p class="card-text mb-0">@s.Text</p>
+        </div>
     </div>
 }

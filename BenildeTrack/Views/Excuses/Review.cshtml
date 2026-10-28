@@ -1,0 +1,53 @@
+@model ExcuseDocument
+@{
+    ViewData["Title"] = "Review excuse";
+}
+
+<h1 class="h3 mb-4">Review excuse</h1>
+
+<div class="card shadow-sm col-xl-8 mb-4">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Student</dt><dd class="col-sm-9">@Model.Student?.DisplayName</dd>
+            <dt class="col-sm-3">Subject</dt><dd class="col-sm-9">@Model.Subject?.Code - @Model.Subject?.Name</dd>
+            <dt class="col-sm-3">Submitted</dt><dd class="col-sm-9">@Model.DateSubmitted.ToString("MMM d, yyyy")</dd>
+            <dt class="col-sm-3">Reason</dt><dd class="col-sm-9">@Model.Reason</dd>
+            <dt class="col-sm-3">Dates covered</dt>
+            <dd class="col-sm-9">
+                @foreach (var r in Model.AttendanceRecords.OrderBy(rec => rec.Date))
+                {
+                    <div>@r.Date.ToString("MMM d, yyyy") - @r.Type</div>
+                }
+            </dd>
+        </dl>
+
+        @if (Model.PictureFileName != null)
+        {
+            <h2 class="h6 mt-4">Picture</h2>
+            <img class="img-fluid border" alt="Excuse picture" src="@Url.Action("Picture", "Excuses", new { id = Model.Id })" />
+        }
+
+        @if (Model.SignatureFileName != null)
+        {
+            <h2 class="h6 mt-4">Signature</h2>
+            <img class="border bg-white" alt="Student signature" src="@Url.Action("Signature", "Excuses", new { id = Model.Id })" />
+        }
+    </div>
+</div>
+
+@if (Model.Status == ExcuseStatus.Pending)
+{
+    <form method="post" asp-action="Decide" class="card shadow-sm col-xl-8">
+        <div class="card-body">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <label class="form-label" for="remarks">Remarks (required when rejecting)</label>
+            <textarea id="remarks" name="remarks" class="form-control mb-3" rows="3"></textarea>
+            <button name="accept" value="true" class="btn btn-success">Accept</button>
+            <button name="accept" value="false" class="btn btn-danger">Reject</button>
+        </div>
+    </form>
+}
+else
+{
+    <p>Already decided: @Model.Status</p>
+}

@@ -3,41 +3,37 @@
     ViewData["Title"] = "Campus";
 }
 
-<h1 class="page-title">Campus</h1>
+<h1 class="h3 mb-4">Campus</h1>
 
-<div class="panel">
-    <h2 class="panel-title">Current violations</h2>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-success text-white fw-semibold">Current violations</div>
     @if (!Model.Violations.Any())
     {
-        <p class="text-muted mb-0">No open violations.</p>
+        <div class="card-body text-muted">No open violations.</div>
     }
     else
     {
-        <table class="table mb-0">
+        <table class="table table-striped mb-0">
             <thead><tr><th>Date</th><th>Violation</th><th>Details</th></tr></thead>
             <tbody>
                 @foreach (var v in Model.Violations)
                 {
-                    <tr>
-                        <td>@v.Date.ToString("MMM d, yyyy")</td>
-                        <td>@v.Title</td>
-                        <td>@v.Description</td>
-                    </tr>
+                    <tr><td>@v.Date.ToString("MMM d, yyyy")</td><td>@v.Title</td><td>@v.Description</td></tr>
                 }
             </tbody>
         </table>
     }
 </div>
 
-<div class="panel">
-    <h2 class="panel-title">Missing clearances</h2>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-success text-white fw-semibold">Missing clearances</div>
     @if (!Model.MissingClearances.Any())
     {
-        <p class="text-muted mb-0">Nothing missing.</p>
+        <div class="card-body text-muted">Nothing missing.</div>
     }
     else
     {
-        <table class="table mb-0">
+        <table class="table table-striped mb-0">
             <thead><tr><th>Clearance</th><th>Guide</th></tr></thead>
             <tbody>
                 @foreach (var r in Model.MissingClearances)
@@ -49,15 +45,15 @@
     }
 </div>
 
-<div class="panel">
-    <h2 class="panel-title">Campus objectives: missing</h2>
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white fw-semibold">Campus objectives: missing</div>
     @if (!Model.MissingObjectives.Any())
     {
-        <p class="text-muted mb-0">All objectives complete.</p>
+        <div class="card-body text-muted">All objectives complete.</div>
     }
     else
     {
-        <table class="table mb-0">
+        <table class="table table-striped mb-0">
             <thead><tr><th>Objective</th><th>Guide</th></tr></thead>
             <tbody>
                 @foreach (var r in Model.MissingObjectives)

@@ -37,13 +37,13 @@ public class StudentsController : Controller
 
         var enrolled = await _db.Enrollments
             .Where(e => e.StudentId == id)
-            .Select(e => e.Course!)
-            .OrderBy(c => c.Code)
+            .OrderBy(e => e.Subject!.Code)
+            .Select(e => e.Subject!)
             .ToListAsync();
 
-        var notEnrolled = await _db.Courses
-            .Where(c => !_db.Enrollments.Any(e => e.CourseId == c.Id && e.StudentId == id))
-            .OrderBy(c => c.Code)
+        var notEnrolled = await _db.Subjects
+            .Where(s => !_db.Enrollments.Any(e => e.SubjectId == s.Id && e.StudentId == id))
+            .OrderBy(s => s.Code)
             .ToListAsync();
 
         var violations = await _db.Violations
@@ -71,15 +71,15 @@ public class StudentsController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Enroll(string id, int courseId)
+    public async Task<IActionResult> Enroll(string id, int subjectId)
     {
         if (await FindStudentAsync(id) == null) return NotFound();
 
-        bool courseExists = await _db.Courses.AnyAsync(c => c.Id == courseId);
-        bool alreadyIn = await _db.Enrollments.AnyAsync(e => e.StudentId == id && e.CourseId == courseId);
-        if (courseExists && !alreadyIn)
+        bool subjectExists = await _db.Subjects.AnyAsync(s => s.Id == subjectId);
+        bool alreadyIn = await _db.Enrollments.AnyAsync(e => e.StudentId == id && e.SubjectId == subjectId);
+        if (subjectExists && !alreadyIn)
         {
-            _db.Enrollments.Add(new Enrollment { StudentId = id, CourseId = courseId });
+            _db.Enrollments.Add(new Enrollment { StudentId = id, SubjectId = subjectId });
             await _db.SaveChangesAsync();
             TempData["Message"] = "Student enrolled.";
         }

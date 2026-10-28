@@ -1,5 +1,5 @@
 using BenildeTrack.Models;
-using BenildeTrack.Services;
+using BenildeTrack.Services.Tala;
 using BenildeTrack.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BenildeTrack.Controllers;
 
-// The chat box on the student dashboard calls this with fetch() and shows the JSON it gets back.
-[Authorize(Roles = AppRoles.Student)]
+// "Ask Tala" is for everyone: students, professors and admins.
+[Authorize]
 public class TalaController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -20,15 +20,21 @@ public class TalaController : Controller
         _tala = tala;
     }
 
+    public IActionResult Index()
+    {
+        return View();
+    }
+
+    // The chat box calls this with fetch() and shows the JSON it gets back.
     [HttpPost]
     public async Task<IActionResult> Ask([FromBody] TalaRequest? request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Question) || request.Question.Length > 300)
             return BadRequest();
 
-        // The student id comes from the login, never from the request, so nobody can ask about someone else.
+        // The user id comes from the login, never from the request, so nobody can ask about someone else.
         var userId = _userManager.GetUserId(User)!;
-        var reply = await _tala.AskAsync(userId, request.Question);
+        var reply = await _tala.AskAsync(userId, User.IsInRole(AppRoles.Student), request.Question);
         return Json(reply);
     }
 }

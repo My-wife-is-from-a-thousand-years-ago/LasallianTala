@@ -26,29 +26,17 @@ namespace BenildeTrack.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AspNetUsers",
+                name: "Courses",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    FullName = table.Column<string>(type: "TEXT", nullable: false),
-                    UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
-                    NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
-                    Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
-                    NormalizedEmail = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
-                    EmailConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
-                    PasswordHash = table.Column<string>(type: "TEXT", nullable: true),
-                    SecurityStamp = table.Column<string>(type: "TEXT", nullable: true),
-                    ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true),
-                    PhoneNumber = table.Column<string>(type: "TEXT", nullable: true),
-                    PhoneNumberConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
-                    TwoFactorEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
-                    LockoutEnd = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
-                    LockoutEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
-                    AccessFailedCount = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                    table.PrimaryKey("PK_Courses", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -59,6 +47,7 @@ namespace BenildeTrack.Data.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Number = table.Column<string>(type: "TEXT", nullable: false),
                     Title = table.Column<string>(type: "TEXT", nullable: false),
+                    Keywords = table.Column<string>(type: "TEXT", nullable: false),
                     Text = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
@@ -100,6 +89,38 @@ namespace BenildeTrack.Data.Migrations
                         principalTable: "AspNetRoles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUsers",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    FullName = table.Column<string>(type: "TEXT", nullable: false),
+                    CourseId = table.Column<int>(type: "INTEGER", nullable: true),
+                    UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                    PasswordHash = table.Column<string>(type: "TEXT", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "TEXT", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "TEXT", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "TEXT", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "INTEGER", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetUsers_Courses_CourseId",
+                        column: x => x.CourseId,
+                        principalTable: "Courses",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -188,23 +209,57 @@ namespace BenildeTrack.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Courses",
+                name: "CompletedRequirements",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    StudentId = table.Column<string>(type: "TEXT", nullable: false),
+                    RequirementId = table.Column<int>(type: "INTEGER", nullable: false),
+                    DateCompleted = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CompletedRequirements", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CompletedRequirements_AspNetUsers_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CompletedRequirements_Requirements_RequirementId",
+                        column: x => x.RequirementId,
+                        principalTable: "Requirements",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Subjects",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Code = table.Column<string>(type: "TEXT", nullable: false),
-                    Subject = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
                     MaxPoints = table.Column<int>(type: "INTEGER", nullable: false),
-                    TeacherId = table.Column<string>(type: "TEXT", nullable: false)
+                    CourseId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ProfessorId = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Courses", x => x.Id);
+                    table.PrimaryKey("PK_Subjects", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Courses_AspNetUsers_TeacherId",
-                        column: x => x.TeacherId,
+                        name: "FK_Subjects_AspNetUsers_ProfessorId",
+                        column: x => x.ProfessorId,
                         principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Subjects_Courses_CourseId",
+                        column: x => x.CourseId,
+                        principalTable: "Courses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -233,68 +288,13 @@ namespace BenildeTrack.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CompletedRequirements",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    StudentId = table.Column<string>(type: "TEXT", nullable: false),
-                    RequirementId = table.Column<int>(type: "INTEGER", nullable: false),
-                    DateCompleted = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CompletedRequirements", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CompletedRequirements_AspNetUsers_StudentId",
-                        column: x => x.StudentId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_CompletedRequirements_Requirements_RequirementId",
-                        column: x => x.RequirementId,
-                        principalTable: "Requirements",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "AttendanceRecords",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    StudentId = table.Column<string>(type: "TEXT", nullable: false),
-                    CourseId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Date = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Type = table.Column<int>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AttendanceRecords", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_AttendanceRecords_AspNetUsers_StudentId",
-                        column: x => x.StudentId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_AttendanceRecords_Courses_CourseId",
-                        column: x => x.CourseId,
-                        principalTable: "Courses",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Enrollments",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     StudentId = table.Column<string>(type: "TEXT", nullable: false),
-                    CourseId = table.Column<int>(type: "INTEGER", nullable: false)
+                    SubjectId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -306,9 +306,75 @@ namespace BenildeTrack.Data.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Enrollments_Courses_CourseId",
-                        column: x => x.CourseId,
-                        principalTable: "Courses",
+                        name: "FK_Enrollments_Subjects_SubjectId",
+                        column: x => x.SubjectId,
+                        principalTable: "Subjects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ExcuseDocuments",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    StudentId = table.Column<string>(type: "TEXT", nullable: false),
+                    SubjectId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Reason = table.Column<string>(type: "TEXT", nullable: false),
+                    PictureFileName = table.Column<string>(type: "TEXT", nullable: true),
+                    SignatureFileName = table.Column<string>(type: "TEXT", nullable: true),
+                    DateSubmitted = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    Remarks = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ExcuseDocuments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ExcuseDocuments_AspNetUsers_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ExcuseDocuments_Subjects_SubjectId",
+                        column: x => x.SubjectId,
+                        principalTable: "Subjects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AttendanceRecords",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    StudentId = table.Column<string>(type: "TEXT", nullable: false),
+                    SubjectId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Date = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    ExcuseDocumentId = table.Column<int>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AttendanceRecords", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AttendanceRecords_AspNetUsers_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AttendanceRecords_ExcuseDocuments_ExcuseDocumentId",
+                        column: x => x.ExcuseDocumentId,
+                        principalTable: "ExcuseDocuments",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_AttendanceRecords_Subjects_SubjectId",
+                        column: x => x.SubjectId,
+                        principalTable: "Subjects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -345,21 +411,31 @@ namespace BenildeTrack.Data.Migrations
                 column: "NormalizedEmail");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AspNetUsers_CourseId",
+                table: "AspNetUsers",
+                column: "CourseId");
+
+            migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_AttendanceRecords_CourseId",
+                name: "IX_AttendanceRecords_ExcuseDocumentId",
                 table: "AttendanceRecords",
-                column: "CourseId");
+                column: "ExcuseDocumentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AttendanceRecords_StudentId_CourseId_Date",
+                name: "IX_AttendanceRecords_StudentId_SubjectId_Date",
                 table: "AttendanceRecords",
-                columns: new[] { "StudentId", "CourseId", "Date" },
+                columns: new[] { "StudentId", "SubjectId", "Date" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AttendanceRecords_SubjectId",
+                table: "AttendanceRecords",
+                column: "SubjectId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CompletedRequirements_RequirementId",
@@ -373,20 +449,35 @@ namespace BenildeTrack.Data.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Courses_TeacherId",
-                table: "Courses",
-                column: "TeacherId");
+                name: "IX_Enrollments_StudentId_SubjectId",
+                table: "Enrollments",
+                columns: new[] { "StudentId", "SubjectId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Enrollments_CourseId",
+                name: "IX_Enrollments_SubjectId",
                 table: "Enrollments",
+                column: "SubjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExcuseDocuments_StudentId",
+                table: "ExcuseDocuments",
+                column: "StudentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExcuseDocuments_SubjectId",
+                table: "ExcuseDocuments",
+                column: "SubjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Subjects_CourseId",
+                table: "Subjects",
                 column: "CourseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Enrollments_StudentId_CourseId",
-                table: "Enrollments",
-                columns: new[] { "StudentId", "CourseId" },
-                unique: true);
+                name: "IX_Subjects_ProfessorId",
+                table: "Subjects",
+                column: "ProfessorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Violations_StudentId",
@@ -431,13 +522,19 @@ namespace BenildeTrack.Data.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "ExcuseDocuments");
+
+            migrationBuilder.DropTable(
                 name: "Requirements");
 
             migrationBuilder.DropTable(
-                name: "Courses");
+                name: "Subjects");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "Courses");
         }
     }
 }

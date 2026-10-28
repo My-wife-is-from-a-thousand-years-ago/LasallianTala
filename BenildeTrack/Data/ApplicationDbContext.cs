@@ -10,8 +10,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
     public DbSet<Course> Courses => Set<Course>();
+    public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+    public DbSet<ExcuseDocument> ExcuseDocuments => Set<ExcuseDocument>();
     public DbSet<Violation> Violations => Set<Violation>();
     public DbSet<Requirement> Requirements => Set<Requirement>();
     public DbSet<CompletedRequirement> CompletedRequirements => Set<CompletedRequirement>();
@@ -23,8 +25,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         base.OnModelCreating(builder);
 
         // Safety nets: the database itself refuses duplicates.
-        builder.Entity<Enrollment>().HasIndex(e => new { e.StudentId, e.CourseId }).IsUnique();
+        builder.Entity<Enrollment>().HasIndex(e => new { e.StudentId, e.SubjectId }).IsUnique();
         builder.Entity<CompletedRequirement>().HasIndex(c => new { c.StudentId, c.RequirementId }).IsUnique();
-        builder.Entity<AttendanceRecord>().HasIndex(a => new { a.StudentId, a.CourseId, a.Date }).IsUnique();
+        builder.Entity<AttendanceRecord>().HasIndex(a => new { a.StudentId, a.SubjectId, a.Date }).IsUnique();
+
+        // Deleting a professor must never silently delete their subjects and every attendance record.
+        builder.Entity<Subject>()
+            .HasOne(s => s.Professor)
+            .WithMany()
+            .HasForeignKey(s => s.ProfessorId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -1,6 +1,6 @@
 namespace BenildeTrack.Models;
 
-// Which student is in which course.
+// Which student takes which subject.
 public class Enrollment
 {
     public int Id { get; set; }
@@ -8,6 +8,6 @@ public class Enrollment
     public string StudentId { get; set; } = "";
     public ApplicationUser? Student { get; set; }
 
-    public int CourseId { get; set; }
-    public Course? Course { get; set; }
+    public int SubjectId { get; set; }
+    public Subject? Subject { get; set; }
 }

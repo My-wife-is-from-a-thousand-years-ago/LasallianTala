@@ -10,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 namespace BenildeTrack.Controllers;
 
 // One URL, three dashboards: the logged-in role decides which view is shown.
+//   Student   -> their own records
+//   Professor -> their students' records
+//   Admin     -> account management
 [Authorize]
 public class DashboardController : Controller
 {
@@ -17,24 +20,27 @@ public class DashboardController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly StandingService _standing;
+    private readonly ExcuseService _excuses;
 
     public DashboardController(
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        StandingService standing)
+        StandingService standing,
+        ExcuseService excuses)
     {
         _db = db;
         _userManager = userManager;
         _signInManager = signInManager;
         _standing = standing;
+        _excuses = excuses;
     }
 
     public async Task<IActionResult> Index()
     {
         // Someone who just registered has no role yet. Make them a Student (the safest role),
         // then refresh their login cookie so the new role takes effect.
-        if (!User.IsInRole(AppRoles.Student) && !User.IsInRole(AppRoles.Teacher) && !User.IsInRole(AppRoles.Admin))
+        if (!User.IsInRole(AppRoles.Student) && !User.IsInRole(AppRoles.Professor) && !User.IsInRole(AppRoles.Admin))
         {
             var newUser = await _userManager.GetUserAsync(User);
             if (newUser == null) return Challenge();
@@ -49,50 +55,46 @@ public class DashboardController : Controller
         var userId = _userManager.GetUserId(User)!;
 
         if (User.IsInRole(AppRoles.Admin))
-            return View("Admin", await BuildStudentRowsAsync());
+            return View("Admin", await BuildAccountRowsAsync());
 
-        if (User.IsInRole(AppRoles.Teacher))
+        if (User.IsInRole(AppRoles.Professor))
         {
-            var myCourses = await _db.Courses.Where(c => c.TeacherId == userId).OrderBy(c => c.Code).ToListAsync();
-            return View("Teacher", myCourses);
+            var professorModel = new ProfessorDashboardViewModel
+            {
+                Subjects = await _standing.GetRostersAsync(userId),
+                PendingExcuses = await _excuses.GetPendingForProfessorAsync(userId)
+            };
+            return View("Professor", professorModel);
         }
 
-        var model = new DashboardViewModel
+        var student = await _db.Users.Include(u => u.Course).FirstAsync(u => u.Id == userId);
+        var studentModel = new DashboardViewModel
         {
-            Courses = await _standing.GetCoursePointsAsync(userId),
+            HasCourse = student.CourseId != null,
+            CourseName = student.Course?.Name ?? "",
+            Subjects = await _standing.GetSubjectPointsAsync(userId),
+            RecentExcuses = await _excuses.GetForStudentAsync(userId, 5),
             OpenViolations = (await _standing.GetOpenViolationsAsync(userId)).Count,
             MissingClearances = (await _standing.GetMissingAsync(userId, RequirementKind.Clearance)).Count,
             MissingObjectives = (await _standing.GetMissingAsync(userId, RequirementKind.Objective)).Count
         };
-        return View("Student", model);
+        return View("Student", studentModel);
     }
 
-    // The admin's student list, with counts of open violations and missing requirements.
-    private async Task<List<StudentRow>> BuildStudentRowsAsync()
+    // The admin's account list: every user with their role.
+    private async Task<List<AccountRow>> BuildAccountRowsAsync()
     {
-        var students = await _userManager.GetUsersInRoleAsync(AppRoles.Student);
+        var users = await _db.Users.Include(u => u.Course).OrderBy(u => u.Email).ToListAsync();
 
-        var violationCounts = await _db.Violations
-            .Where(v => !v.IsResolved)
-            .GroupBy(v => v.StudentId)
-            .Select(g => new { StudentId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.StudentId, x => x.Count);
+        var userRoles = await (
+            from ur in _db.UserRoles
+            join r in _db.Roles on ur.RoleId equals r.Id
+            select new { ur.UserId, RoleName = r.Name }
+        ).ToListAsync();
+        var roleByUser = userRoles.GroupBy(x => x.UserId).ToDictionary(g => g.Key, g => g.First().RoleName ?? "");
 
-        var doneCounts = await _db.CompletedRequirements
-            .GroupBy(c => c.StudentId)
-            .Select(g => new { StudentId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.StudentId, x => x.Count);
-
-        int totalRequirements = await _db.Requirements.CountAsync();
-
-        return students
-            .OrderBy(s => s.DisplayName)
-            .Select(s => new StudentRow
-            {
-                Student = s,
-                OpenViolations = violationCounts.GetValueOrDefault(s.Id),
-                MissingRequirements = totalRequirements - doneCounts.GetValueOrDefault(s.Id)
-            })
+        return users
+            .Select(u => new AccountRow { User = u, Role = roleByUser.GetValueOrDefault(u.Id, "") })
             .ToList();
     }
 }
