@@ -42,7 +42,9 @@ public class GeminiClient
             if (!response.IsSuccessStatusCode)
             {
                 // 400/403 = bad key, 404 = wrong model name, 429 = quota used up.
-                _logger.LogWarning("Gemini returned HTTP {Status}", (int)response.StatusCode);
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Gemini returned HTTP {Status}: {Body}", (int)response.StatusCode,
+                    errorBody.Length > 400 ? errorBody[..400] : errorBody);
                 return null;
             }
 
