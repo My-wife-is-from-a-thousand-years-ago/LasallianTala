@@ -23,6 +23,12 @@ public static class SeedData
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 
+        // The handbook is real data too: keep it in sync with Data/handbook.json in every environment.
+        await HandbookLoader.SyncAsync(
+            db,
+            services.GetRequiredService<IHostEnvironment>().ContentRootPath,
+            services.GetRequiredService<ILoggerFactory>().CreateLogger("Handbook"));
+
         if (addDemoData)
             await AddDemoDataAsync(services, db);
     }
@@ -60,12 +66,7 @@ public static class SeedData
             new Requirement { Kind = RequirementKind.Clearance, Name = "Library clearance", Guide = "PLACEHOLDER: return all borrowed books" },
             new Requirement { Kind = RequirementKind.Clearance, Name = "Finance clearance", Guide = "PLACEHOLDER: settle any balance" });
 
-        // PLACEHOLDER handbook text. Replace with the real handbook. Keywords help search find sections cheaply.
-        db.HandbookSections.AddRange(
-            new HandbookSection { Number = "X.1", Title = "Disruptive noise in class", Keywords = "shouting, yelling, yell, loud, noise, talking", Text = "PLACEHOLDER. Shouting or loud noise that disrupts a class." },
-            new HandbookSection { Number = "X.2", Title = "Academic dishonesty", Keywords = "cheating, copying, plagiarism, exam", Text = "PLACEHOLDER. Copying work or using unauthorized help during an exam." },
-            new HandbookSection { Number = "X.3", Title = "Dress code", Keywords = "uniform, attire, clothes, shirt", Text = "PLACEHOLDER. Wearing the proper uniform or attire on campus." },
-            new HandbookSection { Number = "X.4", Title = "Attendance and dropout points", Keywords = "absent, absence, late, tardy, dropout, points", Text = "PLACEHOLDER. An absence is 3 points and a late is 1 point. Reaching the subject limit means dropout." });
+        // The handbook is NOT seeded here. It is loaded from Data/handbook.json at every startup (see HandbookLoader).
 
         // Save now so the subjects get their Ids.
         await db.SaveChangesAsync();
