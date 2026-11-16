@@ -12,13 +12,16 @@ namespace BenildeTrack.Controllers;
 [Authorize(Roles = AppRoles.Admin)]
 public class AccountsController : Controller
 {
+    // FIX: SignInManager added so an admin stays logged in after resetting their own password
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public AccountsController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public AccountsController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
     {
         _db = db;
         _userManager = userManager;
+        _signInManager = signInManager;
     }
 
     // The course dropdown is not posted back, so refill it whenever the form is shown.
@@ -117,6 +120,8 @@ public class AccountsController : Controller
         {
             await _userManager.RemoveFromRolesAsync(user, currentRoles);
             await _userManager.AddToRoleAsync(user, model.Role);
+            // FIX: log the user out of their old role
+            await _userManager.UpdateSecurityStampAsync(user);
         }
 
         // Optional password reset.
@@ -129,6 +134,9 @@ public class AccountsController : Controller
                 foreach (var error in reset.Errors) ModelState.AddModelError("", error.Description);
                 return View(await WithCoursesAsync(model));
             }
+
+            // FIX: keep the admin logged in if they reset their own password
+            if (isMe) await _signInManager.RefreshSignInAsync(user);
         }
 
         TempData["Message"] = "Account updated.";

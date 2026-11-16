@@ -15,7 +15,8 @@
         <div class="card shadow-sm">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <span class="fw-semibold">Course Panel</span>
-                <a class="btn btn-sm btn-light" asp-controller="Subjects" asp-action="Index">Manage subjects</a>
+                @* FIX: slimmer button so all card headers are the same height *@
+                <a class="btn btn-sm btn-light py-0" asp-controller="Subjects" asp-action="Index">Manage subjects</a>
             </div>
             <div class="card-body">
 

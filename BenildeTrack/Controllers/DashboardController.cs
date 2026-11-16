@@ -67,7 +67,13 @@ public class DashboardController : Controller
             return View("Professor", professorModel);
         }
 
-        var student = await _db.Users.Include(u => u.Course).FirstAsync(u => u.Id == userId);
+        // FIX: sign out deleted accounts instead of crashing
+        var student = await _db.Users.Include(u => u.Course).FirstOrDefaultAsync(u => u.Id == userId);
+        if (student == null)
+    {
+        await _signInManager.SignOutAsync();
+        return RedirectToAction("Index", "Home");
+    }
         var studentModel = new DashboardViewModel
         {
             HasCourse = student.CourseId != null,
